@@ -1,0 +1,263 @@
+
+        /* --- CẤU HÌNH CHUNG --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f7; /* Màu nền xám nhẹ kiểu Apple */
+            color: #1d1d1f;
+        }
+
+        a { text-decoration: none; color: inherit; }
+        ul { list-style: none; }
+        img { max-width: 100%; display: block; }
+
+        /* --- HEADER (Giữ nguyên từ code trước) --- */
+        header { background-color: #515154; color: white; position: sticky; top: 0; z-index: 1000; }
+        .header-top {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 1200px; margin: 0 auto; padding: 15px 20px;
+        }
+        .logo-placeholder {
+            height: 40px; background-color: #333; color: #fff;
+            padding: 5px 10px; border: 1px dashed #ccc; font-size: 12px; display: flex; align-items: center;
+        }
+        .search-bar { flex-grow: 1; margin: 0 40px; position: relative; }
+        .search-bar input {
+            width: 100%; padding: 10px 40px 10px 20px; border-radius: 20px; border: none; outline: none;
+        }
+        .search-bar i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #666; cursor: pointer; }
+        .header-actions { display: flex; gap: 20px; font-size: 14px; align-items: center; }
+        .header-nav { background-color: #3e3e40; border-top: 1px solid #666; }
+        .nav-container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .nav-menu { display: flex; width: 100%; overflow-x: auto; }
+        .nav-item { padding: 15px 20px; color: #ccc; font-size: 14px; cursor: pointer; white-space: nowrap; }
+        .nav-item:hover { color: #fff; }
+
+        /* --- HERO BANNER (Apple Watch) --- */
+        .hero-banner {
+            width: 100%;
+            background-color: #000; /* Nền đen cho banner Apple Watch */
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+        .hero-img {
+            width: 100%;
+            max-width: 1600px; /* Giới hạn chiều rộng ảnh */
+            height: auto;
+            object-fit: cover;
+            /* Placeholder styles */
+            min-height: 400px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 24px; border-bottom: 1px solid #333;
+        }
+        .slider-btn {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            background: rgba(255,255,255,0.1); color: white;
+            border: none; width: 50px; height: 50px; border-radius: 50%;
+            font-size: 20px; cursor: pointer; transition: 0.3s;
+        }
+        .slider-btn:hover { background: rgba(255,255,255,0.3); }
+        .btn-prev { left: 20px; }
+        .btn-next { right: 20px; }
+
+        /* --- PROMO BANNER (Giải pháp DN) --- */
+        .promo-section {
+            max-width: 1200px; margin: 30px auto; padding: 0 20px;
+        }
+        .promo-img-placeholder {
+            width: 100%; height: 100px; background-color: #e3f2fd;
+            border: 2px dashed #0066CC; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; color: #0066CC;
+        }
+
+        /* --- PRODUCT SECTION (iPhone) --- */
+        .product-section {
+            max-width: 1200px; margin: 0 auto 50px; padding: 0 20px;
+        }
+        .section-title {
+            text-align: center; font-size: 32px; font-weight: 700; margin-bottom: 30px;
+        }
+        
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 4 Cột */
+            gap: 40px;
+        }
+
+        .product-card {
+            background: white; border-radius: 15px; padding: 20px;
+            position: relative; transition: box-shadow 0.3s;
+            display: flex; flex-direction: column; align-items: center;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            cursor: pointer;
+        }
+        .product-card:hover { box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+
+        /* Badges */
+        .badge {
+            position: absolute; top: 15px; font-size: 12px; font-weight: bold;
+            padding: 4px 8px; border-radius: 4px;
+        }
+        .badge-discount { left: 15px; background-color: #ff0000; color: white; }
+        .badge-new { right: 15px; border: 1px solid #4cd964; color: #4cd964; background: white; }
+
+        /* Product Image */
+        .prod-img-placeholder {
+            width: 180px; height: 180px; background-color: #f0f0f0; margin: 30px 0;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 10px; color: #888;
+        }
+
+        /* Info */
+        .prod-name { font-size: 18px; font-weight: 600; margin-bottom: 15px; line-height: 1.4; }
+        .prod-price { font-size: 16px; font-weight: 700; color: #0066CC; margin-bottom: 5px; }
+        .prod-old-price { font-size: 14px; text-decoration: line-through; color: #999; }
+
+        /* View All Button */
+        .view-all-btn {
+            display: block; width: fit-content; margin: 50px auto 0;
+            padding: 10px 40px; border: 1px solid #0066CC; border-radius: 8px;
+            color: #0066CC; font-weight: 500; transition: 0.3s;
+        }
+        .view-all-btn:hover { background-color: #0066CC; color: white; }
+
+        /* --- FLOATING ICONS --- */
+        .floating-group { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .float-btn {
+            width: 50px; height: 50px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 20px; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .btn-hotline { background-color: #444; }
+        .btn-chat { background-color: #444; }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .product-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 600px) {
+            .product-grid { grid-template-columns: 1fr; }
+            .header-top { flex-direction: column; gap: 15px; }
+            .search-bar { width: 100%; margin: 0; }
+        }
+
+
+/*  footer  */
+
+.site-footer{
+  background:#111;
+  color:#cfcfcf;
+  padding:60px 0 0;
+  margin-top:60px;
+}
+
+.footer-wrap{
+  width:min(1200px, 92%);
+  margin:0 auto;
+  display:grid;
+  grid-template-columns: 2.1fr 1fr 1fr 1.1fr;
+  gap:48px;
+}
+
+.footer-col h4{
+  color:#fff;
+  font-size:18px;
+  margin:8px 0 16px;
+}
+
+.footer-col a{
+  display:block;
+  color:#bdbdbd;
+  text-decoration:none;
+  margin:10px 0;
+  font-size:14px;
+}
+.footer-col a:hover{ color:#fff; }
+
+.footer-logos{
+  display:flex;
+  gap:14px;
+  align-items:center;
+  margin-bottom:14px;
+}
+.logo-box{
+  width:120px;
+  height:44px;
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#fff;
+  font-size:12px;
+}
+
+.footer-desc{
+  font-size:14px;
+  line-height:1.6;
+  margin:12px 0 18px;
+  color:#bdbdbd;
+}
+
+.footer-hotline div{
+  margin:10px 0;
+  font-size:14px;
+}
+.footer-hotline a{
+  display:inline;
+  color:#2f80ed;
+  text-decoration:none;
+  margin-left:10px;
+}
+
+.footer-social{
+  display:flex;
+  gap:12px;
+  margin-top:22px;
+}
+.footer-social a{
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.25);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#fff;
+  text-decoration:none;
+}
+
+.footer-note{
+  margin-top:12px;
+  font-size:13px;
+  color:#bdbdbd;
+}
+.footer-note p{ margin:8px 0; }
+
+.footer-bottom{
+  border-top:1px solid rgba(255,255,255,.12);
+  margin-top:46px;
+  padding:18px 0;
+  color:#888;
+}
+.footer-bottom p{
+  width:min(1200px, 92%);
+  margin:0 auto;
+  font-size:13px;
+}
+
+@media (max-width: 992px){
+  .footer-wrap{ grid-template-columns:1fr 1fr; }
+}
+@media (max-width: 600px){
+  .footer-wrap{ grid-template-columns:1fr; }
+}
+

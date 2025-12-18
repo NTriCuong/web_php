@@ -1,0 +1,437 @@
+/* --- CẤU HÌNH CHUNG --- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+    background-color: #fff;
+    color: #1d1d1f;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+ul {
+    list-style: none;
+}
+
+/* --- HEADER (Copy từ bài trước để giống nhau) --- */
+header {
+    background-color: #515154;
+    color: white;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 15px 20px;
+}
+
+.logo-placeholder {
+    height: 40px;
+    background-color: #333;
+    color: #fff;
+    padding: 5px 10px;
+    border: 1px dashed #ccc;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+}
+
+.search-bar {
+    flex-grow: 1;
+    margin: 0 40px;
+    position: relative;
+}
+
+.search-bar input {
+    width: 100%;
+    padding: 10px 40px 10px 20px;
+    border-radius: 20px;
+    border: none;
+    outline: none;
+}
+
+.search-bar i {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+}
+
+.header-actions {
+    display: flex;
+    gap: 20px;
+    font-size: 14px;
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.header-nav {
+    background-color: #3e3e40;
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.nav-menu {
+    display: flex;
+    width: 100%;
+}
+
+.nav-item {
+    padding: 15px 20px;
+    color: #ccc;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.nav-item:hover {
+    color: #fff;
+}
+
+/* --- DETAIL PAGE STYLES --- */
+.breadcrumb {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 20px;
+    font-size: 14px;
+    color: #666;
+}
+
+.breadcrumb span {
+    margin: 0 5px;
+}
+
+.detail-container {
+    max-width: 1200px;
+    margin: 0 auto 50px;
+    padding: 0 20px;
+    display: flex;
+    gap: 40px;
+}
+
+/* CỘT TRÁI (Ảnh) */
+.detail-left {
+    flex: 1;
+}
+
+.main-image-box {
+    width: 100%;
+    border: 1px solid #eee;
+    border-radius: 15px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.img-placeholder-large {
+    width: 100%;
+    height: 500px;
+    background-color: #f9f9f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d48858; /* Màu Titan sa mạc */
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.thumbnail-list {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.thumb-item {
+    width: 80px;
+    height: 80px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    cursor: pointer;
+    color: #888;
+}
+
+.thumb-item.active {
+    border-color: #0066CC;
+    color: #0066CC;
+}
+
+/* CỘT PHẢI (Thông tin) */
+.detail-right {
+    flex: 1;
+}
+
+.product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.product-header h1 {
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.region-select {
+    border: 1px solid #ddd;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.price-box {
+    margin-bottom: 25px;
+}
+
+.current-price {
+    font-size: 28px;
+    font-weight: bold;
+    color: #0066CC;
+    margin-right: 15px;
+}
+
+.old-price {
+    font-size: 16px;
+    text-decoration: line-through;
+    color: #999;
+}
+
+.vat-note {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* Phần chọn (Options) */
+.option-section {
+    margin-bottom: 20px;
+}
+
+.option-section label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.option-group {
+    display: flex;
+    gap: 10px;
+}
+
+.option-btn {
+    padding: 10px 20px;
+    background: white;
+    border: 1px solid #d2d2d7;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    min-width: 80px;
+}
+
+.option-btn.active {
+    border-color: #0066CC;
+    color: #0066CC;
+    font-weight: bold;
+    box-shadow: 0 0 0 1px #0066CC inset;
+}
+
+.color-group {
+    display: flex;
+    gap: 15px;
+}
+
+.color-circle {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    position: relative;
+}
+
+.color-circle.desert {
+    background-color: #d48858; /* Màu cam Titan */
+}
+
+.color-circle.white {
+    background-color: #f5f5f7;
+}
+
+.color-circle.black {
+    background-color: #333;
+}
+
+.color-circle.blue {
+    background-color: #8bbdc2;
+}
+
+/* Hiệu ứng chọn màu (Vòng tròn bao ngoài) */
+.color-circle.active::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border: 1px solid #0066CC;
+    border-radius: 50%;
+}
+
+/* Box Ưu đãi */
+.promo-box {
+    border: 1px solid #e5e5e5;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 30px;
+    background-color: #fff;
+}
+
+.promo-header {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.promo-expiry {
+    background-color: #f5f5f7;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.promo-group-title {
+    color: #d70018; /* Màu đỏ cho tiêu đề nhóm ưu đãi */
+    font-weight: 600;
+    font-size: 14px;
+    margin: 15px 0 10px;
+}
+
+.promo-list li {
+    font-size: 14px;
+    margin-bottom: 8px;
+    line-height: 1.5;
+    color: #333;
+}
+
+.promo-list li i {
+    color: #4cd964; /* Màu xanh lá checkmark */
+    margin-right: 5px;
+}
+
+/* Nút Mua hàng */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.btn-buy-now {
+    width: 100%;
+    padding: 15px;
+    background-color: #0066CC;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background 0.3s;
+}
+
+.btn-buy-now:hover {
+    background-color: #005bb5;
+}
+
+.btn-installment {
+    width: 100%;
+    padding: 12px;
+    background-color: #fff;
+    color: #0066CC;
+    border: 1px solid #0066CC;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* Floating Buttons (Nút nổi) */
+.floating-group {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.float-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.btn-hotline {
+    background-color: #444;
+}
+
+.btn-chat {
+    background-color: #444;
+}
+
+/* Responsive Tablet & Mobile */
+@media (max-width: 768px) {
+    .detail-container {
+        flex-direction: column;
+    }
+
+    .detail-left {
+        margin-bottom: 30px;
+    }
+
+    .img-placeholder-large {
+        height: 350px;
+    }
+
+    .product-header h1 {
+        font-size: 24px;
+    }
+}

@@ -1,0 +1,415 @@
+/* --- CẤU HÌNH CHUNG --- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+    background-color: #f5f5f7;
+    color: #1d1d1f;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+ul {
+    list-style: none;
+}
+
+/* --- HEADER (Dùng chung) --- */
+header {
+    background-color: #515154;
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 15px 20px;
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo-placeholder {
+    height: 40px;
+    background-color: #333;
+    color: #fff;
+    padding: 5px 10px;
+    border: 1px dashed #ccc;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+}
+
+.search-bar {
+    flex-grow: 1;
+    margin: 0 40px;
+    position: relative;
+}
+
+.search-bar input {
+    width: 100%;
+    padding: 10px 40px 10px 20px;
+    border-radius: 20px;
+    border: none;
+    outline: none;
+}
+
+.search-bar i {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    cursor: pointer;
+}
+
+.header-actions {
+    display: flex;
+    gap: 20px;
+    font-size: 14px;
+    align-items: center;
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.lang-flags {
+    display: flex;
+    gap: 5px;
+}
+
+.header-nav {
+    background-color: #3e3e40;
+    border-top: 1px solid #666;
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.nav-menu {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+}
+
+.nav-item {
+    padding: 15px 20px;
+    color: #ccc;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.3s;
+}
+
+.nav-item:hover {
+    color: #fff;
+}
+
+.nav-item.active {
+    color: #fff;
+}
+
+/* --- MAIN CONTENT STYLES (Trang iPhone) --- */
+.breadcrumb {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 20px;
+    font-size: 14px;
+    color: #666;
+}
+
+.breadcrumb span {
+    margin: 0 5px;
+}
+
+/* Banner Danh mục */
+.category-banner {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #fff;
+    border-radius: 15px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 40px 60px;
+    margin-bottom: 30px;
+}
+
+.banner-content {
+    text-align: center;
+    flex: 1;
+}
+
+.banner-content h1 {
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+
+.banner-content p {
+    font-size: 24px;
+    color: #86868b;
+    margin-bottom: 15px;
+}
+
+.banner-price {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.banner-offer {
+    font-size: 14px;
+    color: #1d1d1f;
+    margin-bottom: 25px;
+}
+
+.btn-buy-now {
+    padding: 10px 30px;
+    background-color: #000;
+    color: white;
+    border-radius: 20px;
+    font-size: 14px;
+    display: inline-block;
+}
+
+.banner-image {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.banner-img-placeholder {
+    width: 300px;
+    height: 300px;
+    background: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    color: #888;
+}
+
+/* Thanh Filter */
+.filter-bar-container {
+    max-width: 1200px;
+    margin: 0 auto 30px;
+    padding: 0 20px;
+}
+
+.filter-list {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+}
+
+.filter-item {
+    padding: 8px 16px;
+    border: 1px solid #d2d2d7;
+    border-radius: 20px;
+    font-size: 14px;
+    color: #1d1d1f;
+    white-space: nowrap;
+    transition: 0.3s;
+}
+
+.filter-item:hover {
+    border-color: #1d1d1f;
+    background-color: #f5f5f7;
+}
+
+.filter-item.active {
+    border-color: #1d1d1f;
+    background-color: #f5f5f7;
+    font-weight: 500;
+}
+
+/* Lưới sản phẩm */
+.product-container {
+    max-width: 1200px;
+    margin: 0 auto 60px;
+    padding: 0 20px;
+}
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.product-card {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    position: relative;
+    transition: box-shadow 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.product-card:hover {
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+/* Badges */
+.badge {
+    position: absolute;
+    top: 15px;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.badge-discount {
+    left: 15px;
+    background-color: #ff0000;
+    color: white;
+}
+
+.badge-new {
+    right: 15px;
+    border: 1px solid #4cd964;
+    color: #4cd964;
+    background: white;
+}
+
+/* Ảnh sản phẩm */
+.product-img {
+    width: 100%;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.img-box {
+    width: 160px;
+    height: 160px;
+    background: #f0f0f0;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+}
+
+/* Thông tin sản phẩm */
+.product-name {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    min-height: 40px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.price-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.curr-price {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0066CC;
+}
+
+.old-price {
+    font-size: 14px;
+    text-decoration: line-through;
+    color: #999;
+}
+
+/* Floating Buttons */
+.floating-group {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.float-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.btn-hotline {
+    background-color: #444;
+}
+
+.btn-chat {
+    background-color: #444;
+}
+
+/* Responsive Mobile */
+@media (max-width: 1024px) {
+    .product-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .category-banner {
+        flex-direction: column-reverse;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .banner-image {
+        margin-bottom: 20px;
+    }
+
+    .header-top {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .search-bar {
+        width: 100%;
+        margin: 0;
+    }
+}
