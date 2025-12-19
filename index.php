@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="/DA-cuoiky/category/detailiphone.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/DA-cuoiky/category/iphone.css">
+    <link rel="stylesheet" href="/DA-cuoiky/order/order.css">
 </head>
 <body>
     
