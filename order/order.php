@@ -1,6 +1,4 @@
 <?php
-session_start();
-
 /**
  * ====== PREFILL TỪ SESSION (khi user đã login) ======
  * Support nhiều key khác nhau để bạn khỏi phải sửa login ngay lập tức.
@@ -45,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         $province = trim($_POST['province'] ?? '');
         $district = trim($_POST['district'] ?? '');
         $addr     = trim($_POST['address_detail'] ?? '');
-        $note     = trim($_POST['note'] ?? ''); // ✅ CSDL bạn KHÔNG có cột note => chỉ giữ để hiển thị, không insert DB
+        $note     = trim($_POST['note'] ?? ''); //CSDL bạn KHÔNG có cột note => chỉ giữ để hiển thị, không insert DB
 
         if ($fullName === '') $fullName = trim($sess['full_name']);
         if ($phone    === '') $phone    = trim($sess['phone']);
@@ -105,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             ]);
             $userId = (int)$conn->lastInsertId();
         } else {
-            // ✅ User đã login: cập nhật lại users theo info mới (đúng schema users)
+            //User đã login: cập nhật lại users theo info mới (đúng schema users)
             $sqlUp = "UPDATE users
                       SET full_name = :full_name, phone = :phone, address = :address
                       WHERE id = :id";
@@ -119,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         }
 
         /**
-         * ✅ Insert orders (đúng schema: KHÔNG có shipping_* và note)
+         *Insert orders (đúng schema: KHÔNG có shipping_* và note)
          */
         $sqlO = "INSERT INTO orders (cart_id, user_id, total_amount, quality)
                  VALUES (NULL, :user_id, :total_amount, :quality)";
@@ -132,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         $orderId = (int)$conn->lastInsertId();
 
         /**
-         * ✅ Insert order_items (đúng bảng + đúng cột)
+         *Insert order_items (đúng bảng + đúng cột)
          */
         $lineTotal = $unitPrice * $qty;
         $sqlI = "INSERT INTO order_items (order_id, product_id, product_variant_id, quality, unit_price, line_total)
@@ -148,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         ]);
 
         /**
-         * ✅ Insert payments (đúng schema payments)
+         *Insert payments (đúng schema payments)
          */
         $sqlP = "INSERT INTO payments (order_id, method, status, total)
                  VALUES (:order_id, 'cod', 'pending', :total)";
@@ -163,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         $stS = $conn->prepare($sqlS);
         $stS->execute([':qty' => $qty, ':vid' => $variantId]);
 
-        // ✅ Đồng bộ session
+        //Đồng bộ session
         $_SESSION['full_name'] = $fullName;
         $_SESSION['phone'] = $phone;
         $_SESSION['province'] = $province;
@@ -247,7 +245,7 @@ $fmtVnd = function($n){
 };
 
 /**
- * ✅ GIỮ DỮ LIỆU TRÊN FORM:
+ *GIỮ DỮ LIỆU TRÊN FORM:
  * - Nếu vừa POST bị lỗi: giữ POST
  * - Nếu GET bình thường: dùng SESSION
  */

@@ -147,7 +147,7 @@
 
         /* --- MAIN CONTENT (LOGIN) --- */
         .login-section {
-            max-width: 1000px;
+            max-width: 200px;
             margin: 40px auto;
             padding: 0 20px;
             display: flex;
@@ -176,35 +176,42 @@
         }
 
         /* Cột phải: Form */
-        .login-form-container {
-            flex: 1;
-        }
+       .login-form-container{
+  flex: 0 1 420px;       /* form gọn, không kéo quá rộng */
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 22px 20px;
+}
 
-        .login-form-container h1 {
-            font-size: 32px;
-            margin-bottom: 30px;
-            font-weight: 500;
-        }
+.login-form-container h1{
+  font-size: 22px;       /* nhỏ lại */
+  margin-bottom: 18px;
+  font-weight: 600;
+}
+
 
         .form-group {
             margin-bottom: 20px;
         }
 
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            font-size: 14px;
-        }
+        .form-group{
+  margin-bottom: 14px;
+}
 
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            outline: none;
-            font-size: 16px;
-        }
+.form-group label{
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.form-group input{
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+}
+
 
         .form-group input:focus {
             border-color: #0066CC;

@@ -1,58 +1,54 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng nhập - ShopDunk</title>
-    <link rel="stylesheet" href="login.css">
-    
-</head>
-<body>
+<?php
+require_once __DIR__ . '/../config/config.php'; // chỉnh path nếu khác
 
-    <header>
-        <div class="header-top">
-            <div class="logo-area">
-                <div class="logo-placeholder">LOGO SHOPDUNK</div>
-            </div>
+$error = '';
 
-            <div class="search-bar">
-                <input type="text" placeholder="Bạn tìm gì...">
-                <i class="fa-solid fa-magnifying-glass"></i>
-            </div>
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
+    $password = trim($_POST['password'] ?? '');
 
-            <div class="header-actions">
-                <div class="action-item">
-                    <i class="fa-solid fa-cart-shopping"></i>
-                    <span>Giỏ hàng</span>
-                </div>
-                <div class="action-item">
-                    <i class="fa-regular fa-user"></i>
-                    <span>Tài khoản</span>
-                </div>
-                <div class="action-item lang-flags">
-                    <span>VN</span>
-                    <span>🇺🇸</span>
-                </div>
-            </div>
-        </div>
+    if ($username === '' || $password === '') {
+        $error = 'Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.';
+    } else {
+        // Lấy user theo username
+        $sql = "SELECT id, user_name, hash_pass, full_name, phone, address, role, created_at
+                FROM users
+                WHERE user_name = :u
+                LIMIT 1";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindValue(':u', $username, PDO::PARAM_STR);
+        $stmt->execute();
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        <nav class="header-nav">
-            <div class="nav-container">
-                <ul class="nav-menu">
-                    <li class="nav-item"><i class="fa-solid fa-bars"></i> &nbsp; Dịch vụ</li>
-                    <li class="nav-item">iPhone</li>
-                    <li class="nav-item">iPad</li>
-                    <li class="nav-item">Mac</li>
-                    <li class="nav-item">Watch</li>
-                    <li class="nav-item">Phụ kiện</li>
-                    <li class="nav-item">Âm thanh</li>
-                    <li class="nav-item">Camera</li>
-                    <li class="nav-item">Gia dụng</li>
-                    <li class="nav-item">Máy lướt</li>
-                </ul>
-            </div>
-        </nav>
-    </header>
+        // So khớp mật khẩu:
+        // - Nếu bạn lưu mật khẩu bằng password_hash -> dùng password_verify
+        // - Nếu bạn đang lưu plaintext (không khuyến nghị) -> so sánh trực tiếp
+        $ok = false;
+        if ($user) {
+            if (password_verify($password, $user['hash_pass'])) {
+                $ok = true;
+            } elseif ($password === $user['hash_pass']) {
+                // fallback nếu DB đang lưu mật khẩu thô
+                $ok = true;
+            }
+        }
+
+        if ($ok) {
+            // Không lưu hash_pass vào session
+            unset($user['hash_pass']);
+
+            // Lưu toàn bộ info user vào session
+            $_SESSION['user'] = $user;
+
+            // Redirect về home
+            header('Location: /DA-cuoiky/index.php?mod=home');
+            exit;
+        } else {
+            $error = 'Sai tên đăng nhập hoặc mật khẩu.';
+        }
+    }
+}
+?>
 
     <main>
         <div class="breadcrumb">
@@ -69,7 +65,13 @@
 
             <div class="login-form-container">
                 <h1>Đăng nhập</h1>
-                <form action="#" method="POST">
+                <?php if (!empty($error)): ?>
+            <div style="margin:10px 0; padding:10px; border:1px solid #fca5a5; background:#fee2e2; border-radius:8px; color:#991b1b;">
+                <?= htmlspecialchars($error) ?>
+            </div>
+            <?php endif; ?>
+
+                <form action="" method="POST">
                     <div class="form-group">
                         <label for="username">Tên đăng nhập:</label>
                         <input type="text" id="username" name="username">
@@ -97,16 +99,3 @@
         </section>
     </main>
 
-    <div class="shop-msg">
-        <div style="width: 20px; height: 20px; background: green; border-radius: 50%;"></div>
-        <div>
-            <strong>SHOPDUNK</strong><br>
-            ShopDunk xin chào!
-        </div>
-    </div>
-    <div class="chat-icon-circle">
-        <i class="fa-solid fa-comment-dots"></i>
-    </div>
-
-</body>
-</html>

@@ -18,11 +18,12 @@ if (!$dataDetail) {
     die('Không tìm thấy sản phẩm');
 }
 
-// truy vấn variant ở csdl (✅ sửa is_active -> active)
-$sql = "SELECT id, storage_gb, color, price, stock, image_url
+// truy vấn variant ở csdl (sửa is_active -> active)
+$sql = "SELECT id, storage_gb, color, color_hex, price, stock, image_url
         FROM product_variants
         WHERE product_id = :id AND active = 1
         ORDER BY storage_gb ASC, color ASC";
+
 $stmt = $conn->prepare($sql);
 $stmt->bindValue(':id', $idProduct, PDO::PARAM_INT);
 $stmt->execute();
@@ -32,18 +33,7 @@ if (!$variants) {
     die('Không tìm thấy variant');
 }
 
-/** Parse 'Titanium Black(#333333)' -> ['name'=>'Titanium Black','hex'=>'#333333'] */
-function parseColorNameHex($str) {
-    $str = trim((string)$str);
-    $name = $str;
-    $hex  = '#999999';
-    if (preg_match('/^(.*)\((#[0-9A-Fa-f]{6})\)\s*$/', $str, $m)) {
-        $name = trim($m[1]);
-        $hex  = $m[2];
-    }
-    if ($name === '') $name = 'Màu';
-    return ['name' => $name, 'hex' => $hex];
-}
+
 
 // Gom theo dung lượng: [256 => [variant...], 512 => [variant...]]
 $byStorage = [];
@@ -51,17 +41,21 @@ foreach ($variants as $v) {
     $s = (int)($v['storage_gb'] ?? 0);
     if ($s <= 0) $s = 0;
 
-    $c = parseColorNameHex($v['color'] ?? '');
+       $hex = trim((string)($v['color_hex'] ?? ''));
+    if (!preg_match('/^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/', $hex)) {
+        $hex = '#000000'; // fallback nếu DB rỗng/sai định dạng
+    }
 
     $byStorage[$s][] = [
         'id'         => (int)$v['id'],
         'storage_gb' => $s,
-        'color_name' => $c['name'],
-        'color_hex'  => $c['hex'],
+        'color_name' => (string)($v['color'] ?? ''), // tên màu lấy từ cột color
+        'color_hex'  => $hex,                         // hex lấy từ cột color_hex
         'price'      => (float)$v['price'],
         'stock'      => (int)$v['stock'],
         'image_url'  => $v['image_url'],
     ];
+
 }
 
 ksort($byStorage);
@@ -70,7 +64,7 @@ $defaultVariant = $byStorage[$defaultStorage][0] ?? null;
 
 $fmtVnd = fn($n) => number_format((float)$n, 0, ',', '.') . '₫';
 
-// ✅ ảnh fallback nếu NULL
+// ảnh fallback nếu NULL
 $defaultImg = $defaultVariant['image_url'] ?? null;
 if (empty($defaultImg)) {
     $defaultImg = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=900&q=80";
@@ -135,7 +129,7 @@ if (empty($defaultImg)) {
                 <div class="color-group" id="colorGroup"></div>
             </div>
 
-            <!-- ✅ CHỈ GIỮ 1 hidden cho JS -->
+            <!-- CHỈ GIỮ 1 hidden cho JS -->
             <input type="hidden" id="variantId" value="<?= $defaultVariant ? (int)$defaultVariant['id'] : '' ?>">
 
             <div class="promo-box">
@@ -170,7 +164,7 @@ if (empty($defaultImg)) {
                 <form action="/DA-cuoiky/index.php" method="GET" id="buyNowForm">
                     <input type="hidden" name="mod" value="order">
                     <input type="hidden" name="id" value="<?= (int)$idProduct ?>">
-                    <!-- ✅ đổi id để không trùng; JS sẽ sync -->
+                    <!-- đổi id để không trùng; JS sẽ sync -->
                     <input type="hidden" name="variant" id="variantIdForm" value="<?= $defaultVariant ? (int)$defaultVariant['id'] : '' ?>">
                     <button class="btn-buy-now" type="submit">MUA NGAY</button>
                 </form>
@@ -208,7 +202,7 @@ function setActiveStorageBtn(storage){
 function setVariant(v){
   currentPrice.textContent = fmtVnd(v.price);
   variantIdInp.value = v.id;
-  if (variantIdForm) variantIdForm.value = v.id; // ✅ sync vào form mua ngay
+  if (variantIdForm) variantIdForm.value = v.id; // sync vào form mua ngay
   if (colorText) colorText.textContent = v.color_name;
 
   // nếu có ảnh theo variant thì đổi ảnh

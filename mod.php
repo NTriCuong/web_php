@@ -11,3 +11,5 @@
         include("./category/iphone.php");
     else if($mod === 'order')
         include('./order/order.php');
+    else if($mod === "register")
+        include("./login/register.php");

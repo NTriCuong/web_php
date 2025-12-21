@@ -1,5 +1,5 @@
 <?php
-session_start();
+// session_start();
 
 // ====== 0) helper ======
 function post($k, $def='') { return isset($_POST[$k]) ? trim((string)$_POST[$k]) : $def; }
