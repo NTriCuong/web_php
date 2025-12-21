@@ -1,87 +1,159 @@
-/*
- * Dữ liệu mẫu (Dummy Data) cho Database apple_store
- * Vui lòng chạy SAU khi đã tạo xong cấu trúc bảng (schema)
- */
-
 USE apple_store;
+-- =========================================
+-- 1) INSERT PRODUCTS
+-- type_id: 1=iPhone, 2=MacBook
+-- =========================================
+INSERT INTO products (name, type_id, description, active) VALUES
+-- iPhone 14 series
+('iPhone 14', 1, 'Apple iPhone 14', 1),
+('iPhone 14 Plus', 1, 'Apple iPhone 14 Plus', 1),
+('iPhone 14 Pro', 1, 'Apple iPhone 14 Pro', 1),
+('iPhone 14 Pro Max', 1, 'Apple iPhone 14 Pro Max', 1),
 
-SET FOREIGN_KEY_CHECKS = 0;
+-- iPhone 15 series
+('iPhone 15', 1, 'Apple iPhone 15', 1),
+('iPhone 15 Plus', 1, 'Apple iPhone 15 Plus', 1),
+('iPhone 15 Pro', 1, 'Apple iPhone 15 Pro', 1),
+('iPhone 15 Pro Max', 1, 'Apple iPhone 15 Pro Max', 1),
 
--- --------------------------------------------------------
--- 1. Dữ liệu USERS
--- --------------------------------------------------------
-INSERT INTO users (id, email, password_hash, full_name, phone, role, status) VALUES
-(1, 'admin@apple.com', 'hashed_password_admin_123', 'Quản Trị Viên', '0901112222', 'admin', 'active'),
-(2, 'customer_a@gmail.com', 'hashed_password_custA_456', 'Nguyễn Văn A', '0903334444', 'customer', 'active'),
-(3, 'customer_b@gmail.com', 'hashed_password_custB_789', 'Trần Thị B', '0905556666', 'customer', 'active');
+-- iPhone 16 series
+('iPhone 16', 1, 'Apple iPhone 16', 1),
+('iPhone 16 Plus', 1, 'Apple iPhone 16 Plus', 1),
+('iPhone 16 Pro', 1, 'Apple iPhone 16 Pro', 1),
+('iPhone 16 Pro Max', 1, 'Apple iPhone 16 Pro Max', 1),
 
--- --------------------------------------------------------
--- 2. Dữ liệu PRODUCTS
--- --------------------------------------------------------
-INSERT INTO products (id, slug, name, product_type, brand, description, is_active) VALUES
-(1, 'iphone-15-pro-max', 'iPhone 15 Pro Max', 'iphone', 'Apple', 'Chip A17 Bionic, camera 48MP.', 1),
-(2, 'iphone-15', 'iPhone 15', 'iphone', 'Apple', 'Chip A16 Bionic, camera kép.', 1),
-(3, 'macbook-pro-m3', 'MacBook Pro 14 inch M3 Max', 'macbook', 'Apple', 'Hiệu năng cực cao cho dân chuyên nghiệp.', 1),
-(4, 'macbook-air-m2', 'MacBook Air 13 inch M2', 'macbook', 'Apple', 'Thiết kế mỏng nhẹ, pin trâu.', 1);
+-- iPhone 17 series
+('iPhone 17', 1, 'Apple iPhone 17', 1),
+('iPhone 17 Plus', 1, 'Apple iPhone 17 Plus', 1),
+('iPhone 17 Pro', 1, 'Apple iPhone 17 Pro', 1),
+('iPhone 17 Pro Max', 1, 'Apple iPhone 17 Pro Max', 1),
 
--- --------------------------------------------------------
--- 3. Dữ liệu PRODUCT_VARIANTS
--- --------------------------------------------------------
-INSERT INTO product_variants (id, product_id, variant_sku, color, storage_gb, price, stock, ram_gb, cpu, screen_inch) VALUES
--- iPhone 15 Pro Max (Product_id: 1)
-(101, 1, 'IP15PM-BL-256', 'Titanium Black', 256, 34990000.00, 50, NULL, NULL, NULL),
-(102, 1, 'IP15PM-WH-512', 'Titanium White', 512, 37990000.00, 30, NULL, NULL, NULL),
+-- MacBook Air M1..M5
+('MacBook Air M1', 2, 'Apple MacBook Air with M1', 1),
+('MacBook Air M2', 2, 'Apple MacBook Air with M2', 1),
+('MacBook Air M3', 2, 'Apple MacBook Air with M3', 1),
+('MacBook Air M4', 2, 'Apple MacBook Air with M4', 1),
+('MacBook Air M5', 2, 'Apple MacBook Air with M5', 1),
 
--- iPhone 15 (Product_id: 2)
-(201, 2, 'IP15-PINK-128', 'Pink', 128, 22990000.00, 100, NULL, NULL, NULL),
-(202, 2, 'IP15-BLUE-256', 'Blue', 256, 25990000.00, 80, NULL, NULL, NULL),
+-- MacBook Pro M1..M5
+('MacBook Pro M1', 2, 'Apple MacBook Pro with M1', 1),
+('MacBook Pro M2', 2, 'Apple MacBook Pro with M2', 1),
+('MacBook Pro M3', 2, 'Apple MacBook Pro with M3', 1),
+('MacBook Pro M4', 2, 'Apple MacBook Pro with M4', 1),
+('MacBook Pro M5', 2, 'Apple MacBook Pro with M5', 1);
 
--- MacBook Pro M3 Max (Product_id: 3)
-(301, 3, 'MBP14-M3-16-512', 'Space Gray', 512, 49990000.00, 15, 16, 'Apple M3 Pro', 14.2),
-(302, 3, 'MBP14-M3-36-1T', 'Silver', 1000, 65990000.00, 5, 36, 'Apple M3 Max', 14.2),
+-- =========================================
+-- 2) INSERT VARIANTS (image_url = NULL)
+-- Mỗi model 2 variants để test UI: (base + higher)
+-- iPhone: color + storage
+-- Mac: color + storage + ram
+-- =========================================
+INSERT INTO product_variants
+(product_id, color, color_hex, image_url, storage_gb, ram_gb, price, stock, active)
+SELECT p.id, v.color, v.color_hex, NULL, v.storage_gb, v.ram_gb, v.price, v.stock, 1
+FROM products p
+JOIN (
+  -- ======================
+  -- iPhone 14 series
+  -- ======================
+  SELECT 'iPhone 14' pname, 'Midnight' color, '#111827' color_hex, 128 storage_gb, NULL ram_gb, 16990000.00 price, 50 stock
+  UNION ALL SELECT 'iPhone 14', 'Starlight', '#F5F5F7', 256, NULL, 18990000.00, 40
 
--- MacBook Air M2 (Product_id: 4)
-(401, 4, 'MBA13-M2-8-256', 'Starlight', 256, 24990000.00, 40, 8, 'Apple M2', 13.6);
+  UNION ALL SELECT 'iPhone 14 Plus', 'Midnight', '#111827', 128, NULL, 18990000.00, 40
+  UNION ALL SELECT 'iPhone 14 Plus', 'Starlight', '#F5F5F7', 256, NULL, 20990000.00, 30
 
--- --------------------------------------------------------
--- 4. Dữ liệu CARTS
--- --------------------------------------------------------
-INSERT INTO carts (id, user_id, status) VALUES
-(1, 2, 'converted'), -- Giỏ hàng đã chuyển đổi thành đơn hàng (Order #1)
-(2, 3, 'active'),    -- Giỏ hàng đang active của Trần Thị B
-(3, 2, 'abandoned'); -- Giỏ hàng cũ bị bỏ của Nguyễn Văn A
+  UNION ALL SELECT 'iPhone 14 Pro', 'Space Black', '#111111', 128, NULL, 23990000.00, 30
+  UNION ALL SELECT 'iPhone 14 Pro', 'Silver', '#D1D5DB', 256, NULL, 26990000.00, 20
 
--- --------------------------------------------------------
--- 5. Dữ liệu CART_ITEMS (cho Cart ID 2)
--- --------------------------------------------------------
-INSERT INTO cart_items (cart_id, variant_id, quantity, unit_price) VALUES
-(2, 201, 1, 22990000.00), -- 1 iPhone 15 Pink 128GB
-(2, 401, 1, 24990000.00); -- 1 MacBook Air M2 Starlight
+  UNION ALL SELECT 'iPhone 14 Pro Max', 'Space Black', '#111111', 256, NULL, 28990000.00, 25
+  UNION ALL SELECT 'iPhone 14 Pro Max', 'Silver', '#D1D5DB', 512, NULL, 32990000.00, 15
 
--- --------------------------------------------------------
--- 6. Dữ liệu ORDERS
--- --------------------------------------------------------
-INSERT INTO orders (id, order_no, user_id, cart_id, status, subtotal, shipping_fee, discount_amount, total_amount, shipping_name, shipping_phone, shipping_address, note, created_at) VALUES
-(1001, 'AS-20251214-0001', 2, 1, 'completed', 37990000.00, 50000.00, 0.00, 38040000.00, 'Nguyễn Văn A', '0903334444', 'Số 1, đường ABC, Q.1, TP.HCM', NULL, '2025-12-14 10:00:00'),
-(1002, 'AS-20251214-0002', 3, NULL, 'pending_payment', 47980000.00, 0.00, 1000000.00, 46980000.00, 'Trần Thị B', '0905556666', 'Số 5, đường XYZ, TP. Hà Nội', 'Giao hàng buổi chiều', '2025-12-14 14:30:00');
+  -- ======================
+  -- iPhone 15 series
+  -- ======================
+  UNION ALL SELECT 'iPhone 15', 'Black', '#111111', 128, NULL, 18990000.00, 60
+  UNION ALL SELECT 'iPhone 15', 'Pink',  '#F9A8D4', 256, NULL, 21990000.00, 45
 
--- --------------------------------------------------------
--- 7. Dữ liệu ORDER_ITEMS
--- --------------------------------------------------------
-INSERT INTO order_items (order_id, variant_id, product_name, variant_desc, quantity, unit_price, line_total) VALUES
--- Cho Order 1001
-(1001, 102, 'iPhone 15 Pro Max', 'Titanium White / 512GB', 1, 37990000.00, 37990000.00),
--- Cho Order 1002
-(1002, 301, 'MacBook Pro 14 inch M3 Max', 'Space Gray / 512GB / RAM 16GB / M3 Pro', 1, 49990000.00, 49990000.00),
-(1002, 401, 'MacBook Air 13 inch M2', 'Starlight / 256GB / RAM 8GB / M2', 1, 24990000.00, 24990000.00);
+  UNION ALL SELECT 'iPhone 15 Plus', 'Black', '#111111', 128, NULL, 20990000.00, 45
+  UNION ALL SELECT 'iPhone 15 Plus', 'Blue',  '#93C5FD', 256, NULL, 23990000.00, 30
 
--- --------------------------------------------------------
--- 8. Dữ liệu PAYMENTS
--- --------------------------------------------------------
-INSERT INTO payments (order_id, method, payment_tier, amount, status, transaction_ref, paid_at) VALUES
--- Payment cho Order 1001 (Đã thanh toán)
-(1001, 'online_gateway', 'FULL', 38040000.00, 'paid', 'TXN-ABC-12345', '2025-12-14 10:05:00'),
--- Payment cho Order 1002 (Đang chờ thanh toán)
-(1002, 'bank_transfer', 'INSTALLMENT_3', 46980000.00, 'pending', NULL, NULL);
+  UNION ALL SELECT 'iPhone 15 Pro', 'Natural Titanium', '#D4D4D8', 128, NULL, 25990000.00, 30
+  UNION ALL SELECT 'iPhone 15 Pro', 'Blue Titanium',    '#60A5FA', 256, NULL, 28990000.00, 20
 
-SET FOREIGN_KEY_CHECKS = 1;
+  UNION ALL SELECT 'iPhone 15 Pro Max', 'Natural Titanium', '#D4D4D8', 256, NULL, 29990000.00, 25
+  UNION ALL SELECT 'iPhone 15 Pro Max', 'Black Titanium',   '#111111', 512, NULL, 34990000.00, 15
+
+  -- ======================
+  -- iPhone 16 series
+  -- ======================
+  UNION ALL SELECT 'iPhone 16', 'Black', '#111111', 128, NULL, 20990000.00, 60
+  UNION ALL SELECT 'iPhone 16', 'White', '#F5F5F7', 256, NULL, 23990000.00, 45
+
+  UNION ALL SELECT 'iPhone 16 Plus', 'Black', '#111111', 128, NULL, 22990000.00, 45
+  UNION ALL SELECT 'iPhone 16 Plus', 'White', '#F5F5F7', 256, NULL, 25990000.00, 30
+
+  UNION ALL SELECT 'iPhone 16 Pro', 'Titanium Black', '#111111', 256, NULL, 29990000.00, 25
+  UNION ALL SELECT 'iPhone 16 Pro', 'Titanium White', '#F5F5F7', 512, NULL, 34990000.00, 15
+
+  UNION ALL SELECT 'iPhone 16 Pro Max', 'Titanium Black', '#111111', 256, NULL, 32990000.00, 20
+  UNION ALL SELECT 'iPhone 16 Pro Max', 'Titanium White', '#F5F5F7', 512, NULL, 37990000.00, 12
+
+  -- ======================
+  -- iPhone 17 series
+  -- ======================
+  UNION ALL SELECT 'iPhone 17', 'Black', '#111111', 256, NULL, 22990000.00, 50
+  UNION ALL SELECT 'iPhone 17', 'White', '#F5F5F7', 512, NULL, 27990000.00, 25
+
+  UNION ALL SELECT 'iPhone 17 Plus', 'Black', '#111111', 256, NULL, 24990000.00, 35
+  UNION ALL SELECT 'iPhone 17 Plus', 'White', '#F5F5F7', 512, NULL, 29990000.00, 20
+
+  UNION ALL SELECT 'iPhone 17 Pro', 'Titanium Black', '#111111', 256, NULL, 31990000.00, 22
+  UNION ALL SELECT 'iPhone 17 Pro', 'Titanium White', '#F5F5F7', 512, NULL, 36990000.00, 12
+
+  UNION ALL SELECT 'iPhone 17 Pro Max', 'Titanium Black', '#111111', 512, NULL, 39990000.00, 10
+  UNION ALL SELECT 'iPhone 17 Pro Max', 'Titanium White', '#F5F5F7', 1000, NULL, 46990000.00, 6
+
+  -- ======================
+  -- MacBook Air M1..M5
+  -- ======================
+  UNION ALL SELECT 'MacBook Air M1', 'Space Gray', '#6B7280', 256, 8,  22990000.00, 25
+  UNION ALL SELECT 'MacBook Air M1', 'Silver',     '#D1D5DB', 512, 16, 27990000.00, 15
+
+  UNION ALL SELECT 'MacBook Air M2', 'Midnight',   '#111827', 256, 8,  25990000.00, 25
+  UNION ALL SELECT 'MacBook Air M2', 'Starlight',  '#F5F5F7', 512, 16, 30990000.00, 15
+
+  UNION ALL SELECT 'MacBook Air M3', 'Space Gray', '#6B7280', 512, 16, 34990000.00, 18
+  UNION ALL SELECT 'MacBook Air M3', 'Silver',     '#D1D5DB', 1000, 16, 39990000.00, 10
+
+  UNION ALL SELECT 'MacBook Air M4', 'Space Gray', '#6B7280', 512, 16, 38990000.00, 14
+  UNION ALL SELECT 'MacBook Air M4', 'Silver',     '#D1D5DB', 1000, 24, 45990000.00, 8
+
+  UNION ALL SELECT 'MacBook Air M5', 'Space Gray', '#6B7280', 1000, 24, 49990000.00, 10
+  UNION ALL SELECT 'MacBook Air M5', 'Silver',     '#D1D5DB', 2000, 32, 59990000.00, 5
+
+  -- ======================
+  -- MacBook Pro M1..M5
+  -- ======================
+  UNION ALL SELECT 'MacBook Pro M1', 'Space Gray', '#6B7280', 512, 16, 32990000.00, 18
+  UNION ALL SELECT 'MacBook Pro M1', 'Silver',     '#D1D5DB', 1000, 16, 37990000.00, 10
+
+  UNION ALL SELECT 'MacBook Pro M2', 'Space Gray', '#6B7280', 512, 16, 36990000.00, 16
+  UNION ALL SELECT 'MacBook Pro M2', 'Silver',     '#D1D5DB', 1000, 24, 43990000.00, 8
+
+  UNION ALL SELECT 'MacBook Pro M3', 'Space Black','#111111', 1000, 24, 49990000.00, 10
+  UNION ALL SELECT 'MacBook Pro M3', 'Silver',     '#D1D5DB', 2000, 32, 59990000.00, 6
+
+  UNION ALL SELECT 'MacBook Pro M4', 'Space Black','#111111', 1000, 24, 54990000.00, 8
+  UNION ALL SELECT 'MacBook Pro M4', 'Silver',     '#D1D5DB', 2000, 36, 65990000.00, 5
+
+  UNION ALL SELECT 'MacBook Pro M5', 'Space Black','#111111', 2000, 36, 69990000.00, 6
+  UNION ALL SELECT 'MacBook Pro M5', 'Silver',     '#D1D5DB', 4000, 48, 89990000.00, 3
+) v ON v.pname = p.name;
+
+-- =========================================
+-- 3) CHECK
+-- =========================================
+SELECT p.id, p.name, pv.id variant_id, pv.color, pv.color_hex, pv.storage_gb, pv.ram_gb, pv.price, pv.image_url
+FROM products p
+JOIN product_variants pv ON pv.product_id = p.id
+ORDER BY p.id, pv.storage_gb, pv.ram_gb;

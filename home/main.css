@@ -241,7 +241,12 @@
   color:#bdbdbd;
 }
 .footer-note p{ margin:8px 0; }
-
+.prod-img-placeholder img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
 .footer-bottom{
   border-top:1px solid rgba(255,255,255,.12);
   margin-top:46px;

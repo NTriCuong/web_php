@@ -1,17 +1,27 @@
 <?php
-$idProduct = $_GET['id'] ?? '';
+$idProduct = (int)($_GET['id'] ?? 0);
 $type      = $_GET['type'] ?? '';
-// lấy thông tin sản phẩm
+
+if ($idProduct <= 0 || empty($type) || !isset($dataProduct[$type])) {
+    die('Thiếu dữ liệu sản phẩm');
+}
+
+// lấy thông tin sản phẩm từ $dataProduct
+$dataDetail = null;
 foreach ($dataProduct[$type] as $value) {
-    if($value['id'] == $idProduct){
-        $dataDetail=$value; 
+    if ((int)$value['id'] === $idProduct) {
+        $dataDetail = $value;
         break;
     }
 }
-// truy vấn variant ở csdl
+if (!$dataDetail) {
+    die('Không tìm thấy sản phẩm');
+}
+
+// truy vấn variant ở csdl (✅ sửa is_active -> active)
 $sql = "SELECT id, storage_gb, color, price, stock, image_url
         FROM product_variants
-        WHERE product_id = :id AND is_active = 1
+        WHERE product_id = :id AND active = 1
         ORDER BY storage_gb ASC, color ASC";
 $stmt = $conn->prepare($sql);
 $stmt->bindValue(':id', $idProduct, PDO::PARAM_INT);
@@ -19,7 +29,7 @@ $stmt->execute();
 $variants = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if (!$variants) {
-    die('Không tìm thấy sản phẩm');
+    die('Không tìm thấy variant');
 }
 
 /** Parse 'Titanium Black(#333333)' -> ['name'=>'Titanium Black','hex'=>'#333333'] */
@@ -38,7 +48,9 @@ function parseColorNameHex($str) {
 // Gom theo dung lượng: [256 => [variant...], 512 => [variant...]]
 $byStorage = [];
 foreach ($variants as $v) {
-    $s = (int)$v['storage_gb'];
+    $s = (int)($v['storage_gb'] ?? 0);
+    if ($s <= 0) $s = 0;
+
     $c = parseColorNameHex($v['color'] ?? '');
 
     $byStorage[$s][] = [
@@ -57,44 +69,48 @@ $defaultStorage = array_key_first($byStorage);
 $defaultVariant = $byStorage[$defaultStorage][0] ?? null;
 
 $fmtVnd = fn($n) => number_format((float)$n, 0, ',', '.') . '₫';
-echo $defaultVariant['id'];
+
+// ✅ ảnh fallback nếu NULL
+$defaultImg = $defaultVariant['image_url'] ?? null;
+if (empty($defaultImg)) {
+    $defaultImg = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=900&q=80";
+}
 ?>
 
 <main>
     <div class="breadcrumb">
-        <a href='/DA-cuoiky/index.php?mod=home'> Trang chủ</a> <span>&rsaquo;</span>
-        <a href="/DA-cuoiky/index.php?mod=categories&type=<?= htmlspecialchars($type) ?>"> <?= htmlspecialchars($type) ?> </a><span>&rsaquo;</span>
-        <!-- fix nhỏ: nếu bạn muốn link detail thì phải là &id= -->
-        <a href="/DA-cuoiky/index.php?mod=detail&type=<?= urlencode($type) ?>&id=<?= (int)$idProduct ?>"></a>
+        <a href='/DA-cuoiky/index.php?mod=home'>Trang chủ</a> <span>&rsaquo;</span>
+        <a href="/DA-cuoiky/index.php?mod=categories&type=<?= htmlspecialchars($type) ?>">
+            <?= htmlspecialchars($type) ?>
+        </a>
+        <span>&rsaquo;</span>
+        <a href="/DA-cuoiky/index.php?mod=detail&type=<?= urlencode($type) ?>&id=<?= (int)$idProduct ?>">
+            <?= htmlspecialchars($dataDetail['name'] ?? '') ?>
+        </a>
     </div>
 
     <div class="detail-container">
         <div class="detail-left">
             <div class="main-image-box">
                 <div class="img-placeholder-large">
-                    <img src="<?=$defaultVariant['image_url']?>" alt="lỗi ảnh <?=$defaultVariant['image_url']?>">
+                    <img id="mainImg" src="<?= htmlspecialchars($defaultImg) ?>" alt="<?= htmlspecialchars($dataDetail['name'] ?? 'Sản phẩm') ?>">
                 </div>
             </div>
         </div>
 
         <div class="detail-right">
             <div class="product-header">
-                <h1><?=$dataDetail['name']?></h1>
+                <h1><?= htmlspecialchars($dataDetail['name'] ?? '') ?></h1>
             </div>
 
             <div class="price-box">
-                <!-- Giá hiện tại -->
                 <span class="current-price" id="currentPrice">
                     <?= $defaultVariant ? $fmtVnd($defaultVariant['price']) : '' ?>
                 </span>
-
-                <!-- nếu bạn muốn giữ giá cũ thì để, còn không xoá dòng dưới -->
-                <!-- <span class="old-price">37.999.000₫</span> -->
-
                 <div class="vat-note">(Đã bao gồm VAT)</div>
             </div>
 
-            <!-- Dung lượng (render từ DB) -->
+            <!-- Dung lượng -->
             <div class="option-section">
                 <label>Dung lượng</label>
                 <div class="option-group" id="storageGroup">
@@ -110,7 +126,7 @@ echo $defaultVariant['id'];
                 </div>
             </div>
 
-            <!-- Màu (render theo dung lượng đang chọn) -->
+            <!-- Màu -->
             <div class="option-section">
                 <label>
                     Màu sắc:
@@ -119,8 +135,8 @@ echo $defaultVariant['id'];
                 <div class="color-group" id="colorGroup"></div>
             </div>
 
-            <!-- Hidden để bạn dùng add-to-cart -->
-            <input type="hidden" id="variantId" name="variant_id" value="<?= $defaultVariant ? (int)$defaultVariant['id'] : '' ?>">
+            <!-- ✅ CHỈ GIỮ 1 hidden cho JS -->
+            <input type="hidden" id="variantId" value="<?= $defaultVariant ? (int)$defaultVariant['id'] : '' ?>">
 
             <div class="promo-box">
                 <div class="promo-header">
@@ -150,16 +166,15 @@ echo $defaultVariant['id'];
                 </div>
             </div>
 
-           <div class="action-buttons">
-            <form action="/DA-cuoiky/index.php" method="GET">
-                <input type="hidden" name="mod" value="order">
-                <input type="hidden" name="id" value="<?=$idProduct?>">
-                <input type="hidden" name="variant" id="variantId" value="<?= $defaultVariant['id'] ?>">
-                <button class="btn-buy-now" type="submit">MUA NGAY</button>
-            </form>
+            <div class="action-buttons">
+                <form action="/DA-cuoiky/index.php" method="GET" id="buyNowForm">
+                    <input type="hidden" name="mod" value="order">
+                    <input type="hidden" name="id" value="<?= (int)$idProduct ?>">
+                    <!-- ✅ đổi id để không trùng; JS sẽ sync -->
+                    <input type="hidden" name="variant" id="variantIdForm" value="<?= $defaultVariant ? (int)$defaultVariant['id'] : '' ?>">
+                    <button class="btn-buy-now" type="submit">MUA NGAY</button>
+                </form>
             </div>
-
-
         </div>
     </div>
 </main>
@@ -172,11 +187,13 @@ echo $defaultVariant['id'];
 <script>
 const variantsByStorage = <?= json_encode($byStorage, JSON_UNESCAPED_UNICODE); ?>;
 
-const storageGroup = document.getElementById('storageGroup');
-const colorGroup   = document.getElementById('colorGroup');
-const currentPrice = document.getElementById('currentPrice');
-const colorText    = document.getElementById('colorText');
-const variantIdInp = document.getElementById('variantId');
+const storageGroup  = document.getElementById('storageGroup');
+const colorGroup    = document.getElementById('colorGroup');
+const currentPrice  = document.getElementById('currentPrice');
+const colorText     = document.getElementById('colorText');
+const variantIdInp  = document.getElementById('variantId');
+const variantIdForm = document.getElementById('variantIdForm');
+const mainImg       = document.getElementById('mainImg');
 
 function fmtVnd(n){
   return new Intl.NumberFormat('vi-VN').format(n) + '₫';
@@ -188,6 +205,18 @@ function setActiveStorageBtn(storage){
   });
 }
 
+function setVariant(v){
+  currentPrice.textContent = fmtVnd(v.price);
+  variantIdInp.value = v.id;
+  if (variantIdForm) variantIdForm.value = v.id; // ✅ sync vào form mua ngay
+  if (colorText) colorText.textContent = v.color_name;
+
+  // nếu có ảnh theo variant thì đổi ảnh
+  if (mainImg && v.image_url) {
+    mainImg.src = v.image_url;
+  }
+}
+
 function renderColors(storage){
   const list = variantsByStorage[storage] || [];
   colorGroup.innerHTML = '';
@@ -197,9 +226,6 @@ function renderColors(storage){
     btn.type = 'button';
     btn.className = 'color-circle' + (idx === 0 ? ' active' : '');
     btn.title = v.color_name;
-    btn.dataset.variantId = v.id;
-    btn.dataset.price = v.price;
-    btn.dataset.colorName = v.color_name;
     btn.style.backgroundColor = v.color_hex;
 
     if (v.stock <= 0) {
@@ -212,19 +238,13 @@ function renderColors(storage){
     btn.addEventListener('click', () => {
       colorGroup.querySelectorAll('.color-circle').forEach(x => x.classList.remove('active'));
       btn.classList.add('active');
-
-      currentPrice.textContent = fmtVnd(v.price);
-      variantIdInp.value = v.id;
-      if (colorText) colorText.textContent = v.color_name;
-
-      // Nếu bạn có ảnh theo variant:
-      // if (v.image_url) document.querySelector('.main-image-box img').src = v.image_url;
+      setVariant(v);
     });
 
     colorGroup.appendChild(btn);
   });
 
-  // auto chọn màu đầu tiên còn hàng (nếu có)
+  // auto chọn màu đầu tiên còn hàng
   const firstEnabled = colorGroup.querySelector('.color-circle:not([disabled])');
   if (firstEnabled) firstEnabled.click();
 }
