@@ -214,6 +214,8 @@ ORDER BY ci.id DESC
     <link rel="stylesheet" href="/DA-cuoiky/category/iphone.css">
     <link rel="stylesheet" href="/DA-cuoiky/order/order.css">
     <link rel="stylesheet" href="/DA-cuoiky/cart/cart.css">
+    <!-- <link rel="stylesheet" href="/DA-cuoiky/admin/admin_product.css"> -->
+
 
     <style>
         .header-cart-wrapper { position: relative; display: inline-block; z-index: 9999; }
@@ -366,7 +368,7 @@ ORDER BY ci.id DESC
                      if(isset($user) && $user['role'] == 'admin'){
                 ?>
                 <br>
-               <a href="/DA-cuoiky/index.php?mod=admin" class="account-btn" style="text-decoration:none; margin-left:10px;">
+               <a href="/DA-cuoiky/admin/admin_product.php" class="account-btn" style="text-decoration:none; margin-left:10px;">
                         <i class="fa-solid fa-user-shield"></i>
                         <span>vào trang quản lý</span>
                     </a>
