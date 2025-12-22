@@ -52,35 +52,27 @@ try {
   // ✅ muốn lấy min price + 1 variant đại diện cho ảnh/màu/storage
   $sqlProduct = "
     SELECT
-      p.id,
-      p.name,
-      p.type_id,
-      MIN(v.price) AS price,
+  p.id,
+  p.name,
+  p.type_id,
+  p.description,
+  p.active    AS product_active,
 
-      -- Lấy 1 variant đại diện (ảnh, màu, storage) theo variant có giá thấp nhất
-      (SELECT vv.color FROM product_variants vv
-        WHERE vv.product_id = p.id AND vv.active = 1
-        ORDER BY vv.price ASC, vv.storage_gb ASC
-        LIMIT 1
-      ) AS color,
+  v.id        AS variant_id,
+  v.color,
+  v.color_hex,
+  v.storage_gb,
+  v.price,
+  v.stock,
+  v.image_url,
+  v.active    AS variant_active
+FROM products p
+LEFT JOIN product_variants v
+  ON v.product_id = p.id
+  AND v.active = 1          -- nếu muốn lấy cả variant inactive thì bỏ dòng này
+WHERE p.active = 1          -- nếu muốn lấy cả sản phẩm inactive thì bỏ dòng này
+ORDER BY p.id DESC, v.price ASC, v.storage_gb ASC, v.color ASC;
 
-      (SELECT vv.storage_gb FROM product_variants vv
-        WHERE vv.product_id = p.id AND vv.active = 1
-        ORDER BY vv.price ASC, vv.storage_gb ASC
-        LIMIT 1
-      ) AS storage_gb,
-
-      (SELECT vv.image_url FROM product_variants vv
-        WHERE vv.product_id = p.id AND vv.active = 1
-        ORDER BY vv.price ASC, vv.storage_gb ASC
-        LIMIT 1
-      ) AS image_url
-
-    FROM products p
-    JOIN product_variants v ON v.product_id = p.id
-    WHERE p.active = 1 AND v.active = 1
-    GROUP BY p.id, p.name, p.type_id
-    ORDER BY p.id DESC
   ";
 
   $stmtProduct = $conn->prepare($sqlProduct);

@@ -74,12 +74,12 @@ if (empty($defaultImg)) {
 <main>
     <div class="breadcrumb">
         <a href='/DA-cuoiky/index.php?mod=home'>Trang chủ</a> <span>&rsaquo;</span>
-        <a href="/DA-cuoiky/index.php?mod=categories&type=<?= htmlspecialchars($type) ?>">
-            <?= htmlspecialchars($type) ?>
+        <a href="/DA-cuoiky/index.php?mod=categories&type=<?= $type ?>">
+            <?= $type ?>
         </a>
         <span>&rsaquo;</span>
         <a href="/DA-cuoiky/index.php?mod=detail&type=<?= urlencode($type) ?>&id=<?= (int)$idProduct ?>">
-            <?= htmlspecialchars($dataDetail['name'] ?? '') ?>
+            <?= $dataDetail['name'] ?? '' ?>
         </a>
     </div>
 
@@ -87,14 +87,14 @@ if (empty($defaultImg)) {
         <div class="detail-left">
             <div class="main-image-box">
                 <div class="img-placeholder-large">
-                    <img id="mainImg" src="<?= htmlspecialchars($defaultImg) ?>" alt="<?= htmlspecialchars($dataDetail['name'] ?? 'Sản phẩm') ?>">
+                    <img id="mainImg" src="<?= $defaultImg ?>" alt="<?= $dataDetail['name'] ?? 'Sản phẩm' ?>">
                 </div>
             </div>
         </div>
 
         <div class="detail-right">
             <div class="product-header">
-                <h1><?= htmlspecialchars($dataDetail['name'] ?? '') ?></h1>
+                <h1><?= $dataDetail['name'] ?? '' ?></h1>
             </div>
 
             <div class="price-box">
@@ -124,7 +124,7 @@ if (empty($defaultImg)) {
             <div class="option-section">
                 <label>
                     Màu sắc:
-                    <span id="colorText"><?= $defaultVariant ? htmlspecialchars($defaultVariant['color_name']) : '' ?></span>
+                    <span id="colorText"><?= $defaultVariant ? $defaultVariant['color_name'] : '' ?></span>
                 </label>
                 <div class="color-group" id="colorGroup"></div>
             </div>
@@ -164,6 +164,7 @@ if (empty($defaultImg)) {
                 <form action="/DA-cuoiky/index.php" method="GET" id="buyNowForm">
                     <input type="hidden" name="mod" value="order">
                     <input type="hidden" name="id" value="<?= (int)$idProduct ?>">
+                    <input type="hidden" name="type" value="<?=$type?>">
                     <!-- đổi id để không trùng; JS sẽ sync -->
                     <input type="hidden" name="variant" id="variantIdForm" value="<?= $defaultVariant ? (int)$defaultVariant['id'] : '' ?>">
                     <button class="btn-buy-now" type="submit">MUA NGAY</button>

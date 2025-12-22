@@ -205,7 +205,7 @@ if (isset($conn) && $userId > 0) {
                 <?php if ($fullName !== ''): ?>
                     <button type="button" class="account-btn" id="accountBtn">
                         <i class="fa-regular fa-user"></i>
-                        <span><?php echo htmlspecialchars($fullName); ?></span>
+                        <span><?=$fullName ?></span>
                     </button>
                     <div class="account-menu" id="accountMenu">
                         <a href="/DA-cuoiky/index.php?mod=logout">Đăng xuất</a>
