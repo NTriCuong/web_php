@@ -1,4 +1,5 @@
 <?php
+ob_start();
 // 1) SESSION
     session_start();
 
@@ -57,6 +58,7 @@ if (isset($conn) && $userId > 0) {
         $mini_cart_items = [];
     }
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -338,3 +340,5 @@ if (isset($conn) && $userId > 0) {
 
 </body>
 </html>
+<?php ob_end_flush(); ?>
+

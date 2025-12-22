@@ -13,3 +13,14 @@
         include('./order/order.php');
     else if($mod === "register")
         include("./login/register.php");
+    elseif($mod === "logout")
+    {
+            // Xóa thông tin user
+        unset($_SESSION['user']);
+        $_SESSION = [];
+        session_destroy();
+
+        // Redirect
+        header("Location: /DA-cuoiky/index.php?mod=home");
+    exit;
+    }
