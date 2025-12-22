@@ -37,7 +37,34 @@ if (isset($_GET['edit_id'])) {
     }
 }
 
-// --- 3. XỬ LÝ: THÊM MỚI HOẶC CẬP NHẬT (Cập nhật logic dò tên trùng) ---
+// --- HÀM HỖ TRỢ UPLOAD ẢNH (SỬA LẠI ĐƯỜNG DẪN) ---
+function uploadImage($fileInfo, $currentImageName = '') {
+    // Nếu không có file mới -> Giữ tên cũ
+    if ($fileInfo['error'] === 4) {
+        return $currentImageName;
+    }
+
+    // Cấu hình thư mục lưu: "../image/" nghĩa là ra khỏi thư mục admin, vào thư mục image
+    $targetDir = "../image/"; 
+    
+    // Kiểm tra và tạo thư mục nếu chưa có
+    if (!file_exists($targetDir)) {
+        mkdir($targetDir, 0777, true); 
+    }
+
+    // Lấy tên file gốc
+    $fileName = basename($fileInfo["name"]);
+    $targetFile = $targetDir . $fileName; 
+    
+    // Upload file
+    if (move_uploaded_file($fileInfo["tmp_name"], $targetFile)) {
+        return $fileName; // CHỈ TRẢ VỀ TÊN FILE (VD: iphone16.jpg) ĐỂ LƯU DB
+    } else {
+        return $currentImageName; // Lỗi thì giữ cũ
+    }
+}
+
+// --- 3. XỬ LÝ: THÊM MỚI HOẶC CẬP NHẬT ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['add_product']) || isset($_POST['update_product']))) {
     $name = trim($_POST['name']);
     $type_id = (int)$_POST['type_id'];
@@ -48,38 +75,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['add_product']) || is
         $conn->beginTransaction();
 
         if (isset($_POST['update_product'])) {
-            // LOGIC SỬA: Cập nhật thông tin cha và thay mới hoàn toàn variant
+            // CẬP NHẬT
             $productId = (int)$_POST['product_id'];
             $sqlProd = "UPDATE products SET name=?, type_id=?, description=? WHERE id=?";
             $conn->prepare($sqlProd)->execute([$name, $type_id, $description, $productId]);
             $conn->prepare("DELETE FROM product_variants WHERE product_id = ?")->execute([$productId]);
             $msg = "Cập nhật thành công!";
         } else {
-            // LOGIC THÊM: Dò xem tên sản phẩm đã tồn tại chưa
+            // THÊM MỚI
             $stmtCheck = $conn->prepare("SELECT id FROM products WHERE name = ? LIMIT 1");
             $stmtCheck->execute([$name]);
             $existingProduct = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
             if ($existingProduct) {
-                // Nếu đã có sp tên này, lấy ID cũ để chèn thêm variant
                 $productId = $existingProduct['id'];
-                $msg = "Sản phẩm đã tồn tại. Đã thêm các phiên bản mới vào sản phẩm sẵn có!";
+                $msg = "Đã thêm phiên bản mới vào sản phẩm có sẵn!";
             } else {
-                // Nếu chưa có, tạo mới sp cha
                 $sqlProd = "INSERT INTO products (name, type_id, description, active, created_at) VALUES (?, ?, ?, 1, NOW())";
                 $stmt1 = $conn->prepare($sqlProd);
                 $stmt1->execute([$name, $type_id, $description]);
                 $productId = $conn->lastInsertId();
-                $msg = "Đã tạo sản phẩm mới và lưu các phiên bản thành công!";
+                $msg = "Tạo mới thành công!";
             }
         }
 
-        // Lưu danh sách variants (Dùng cho cả Thêm và Sửa)
+        // LƯU VARIANTS
         $sqlVar = "INSERT INTO product_variants (product_id, color, color_hex, storage_gb, price, stock, image_url, active, created_at) 
                    VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())";
         $stmt2 = $conn->prepare($sqlVar);
 
-        foreach ($variants as $v) {
+        foreach ($variants as $index => $v) {
+            $fileData = [
+                'name'     => $_FILES['variants']['name'][$index]['image_file'],
+                'type'     => $_FILES['variants']['type'][$index]['image_file'],
+                'tmp_name' => $_FILES['variants']['tmp_name'][$index]['image_file'],
+                'error'    => $_FILES['variants']['error'][$index]['image_file'],
+                'size'     => $_FILES['variants']['size'][$index]['image_file']
+            ];
+
+            $oldImageName = $v['current_image'] ?? '';
+            $finalImageName = uploadImage($fileData, $oldImageName);
+
             $stmt2->execute([
                 $productId, 
                 trim($v['color']), 
@@ -87,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['add_product']) || is
                 (int)$v['storage_gb'], 
                 (float)$v['price'], 
                 (int)$v['stock'], 
-                trim($v['image_url'])
+                $finalImageName
             ]);
         }
 
@@ -108,7 +144,8 @@ if (isset($_GET['delete_id'])) {
 }
 
 // --- 5. LẤY DANH SÁCH ---
-$sqlList = "SELECT p.id, p.name, p.type_id, COUNT(v.id) as total_variants, MIN(v.price) as min_price 
+$sqlList = "SELECT p.id, p.name, p.type_id, COUNT(v.id) as total_variants, MIN(v.price) as min_price,
+            (SELECT image_url FROM product_variants WHERE product_id = p.id LIMIT 1) as thumb_img 
             FROM products p LEFT JOIN product_variants v ON p.id = v.product_id 
             GROUP BY p.id ORDER BY p.id DESC";
 $products = $conn->query($sqlList)->fetchAll(PDO::FETCH_ASSOC);
@@ -138,7 +175,7 @@ $products = $conn->query($sqlList)->fetchAll(PDO::FETCH_ASSOC);
                 <?= $isEditing ? "Sửa sản phẩm: $name" : "Thêm sản phẩm mới" ?></h3>
             </div>
             <div class="card-body">
-                <form method="POST" id="productForm">
+                <form method="POST" id="productForm" enctype="multipart/form-data">
                     <?php if($isEditing): ?>
                         <input type="hidden" name="product_id" value="<?= $editId ?>">
                     <?php endif; ?>
@@ -189,13 +226,24 @@ $products = $conn->query($sqlList)->fetchAll(PDO::FETCH_ASSOC);
                 <table>
                     <thead>
                         <tr>
-                            <th>ID</th><th>Tên</th><th>Loại</th><th>Số bản</th><th>Giá từ</th><th>Hành động</th>
+                            <th>ID</th><th>Hình ảnh</th><th>Tên</th><th>Loại</th><th>Số bản</th><th>Giá từ</th><th>Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($products as $row): ?>
+                        <?php foreach ($products as $row): 
+                            // XỬ LÝ ĐƯỜNG DẪN ẢNH HIỂN THỊ TRONG ADMIN
+                            // Vì admin nằm trong thư mục con, nên phải dùng ../image/
+                            $imgName = $row['thumb_img'] ?? '';
+                            $imgSrc = (strpos($imgName, 'http') === 0) ? $imgName : "../image/" . $imgName;
+                        ?>
                         <tr>
                             <td>#<?= $row['id'] ?></td>
+                            <td>
+                                <img src="<?= htmlspecialchars($imgSrc) ?>" 
+                                     alt="Img"
+                                     onerror="this.src='https://placehold.co/50x50?text=No+Img'"
+                                     style="width: 50px; height: 50px; object-fit: contain; border: 1px solid #ddd;">
+                            </td>
                             <td><?= htmlspecialchars($row['name']) ?></td>
                             <td><?= $row['type_id'] == 1 ? 'iPhone' : 'MacBook' ?></td>
                             <td><?= $row['total_variants'] ?></td>
@@ -216,6 +264,16 @@ $products = $conn->query($sqlList)->fetchAll(PDO::FETCH_ASSOC);
         let variantCount = 0;
         const container = document.getElementById('variants-container');
 
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    input.parentNode.querySelector('img').src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
         function addVariant(data = null) {
             const index = variantCount;
             const color = data ? data.color : '';
@@ -223,7 +281,14 @@ $products = $conn->query($sqlList)->fetchAll(PDO::FETCH_ASSOC);
             const storage = data ? data.storage_gb : 256;
             const price = data ? data.price : '';
             const stock = data ? data.stock : 10;
-            const img = data ? data.image_url : '';
+            
+            // Xử lý ảnh xem trước trong form sửa
+            const imgName = data ? data.image_url : '';
+            let displaySrc = 'https://placehold.co/50x50?text=No+Img';
+            if (imgName) {
+                // Nếu là link online thì giữ nguyên, nếu là tên file thì thêm ../image/
+                displaySrc = (imgName.indexOf('http') === 0) ? imgName : '../image/' + imgName;
+            }
 
             const html = `
             <div class="variant-item" id="variant-${index}">
@@ -245,7 +310,15 @@ $products = $conn->query($sqlList)->fetchAll(PDO::FETCH_ASSOC);
                 <div class="form-row">
                     <div class="form-group"><label>Giá:</label><input type="number" name="variants[${index}][price]" value="${price}" required></div>
                     <div class="form-group"><label>Kho:</label><input type="number" name="variants[${index}][stock]" value="${stock}"></div>
-                    <div class="form-group"><label>Link Ảnh:</label><input type="text" name="variants[${index}][image_url]" value="${img}"></div>
+                    
+                    <div class="form-group">
+                        <label>Chọn Ảnh:</label>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <input type="file" name="variants[${index}][image_file]" accept="image/*" onchange="previewImage(this)" style="padding: 5px;">
+                            <input type="hidden" name="variants[${index}][current_image]" value="${imgName}">
+                            <img src="${displaySrc}" style="width: 50px; height: 50px; object-fit: contain; border: 1px solid #ccc; background:#fff;">
+                        </div>
+                    </div>
                 </div>
             </div>`;
             container.insertAdjacentHTML('beforeend', html);
