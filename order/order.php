@@ -18,19 +18,43 @@
     if (!is_array($cart) || empty($cart)) {
         $cart = [];
     }
-    foreach ($dataProduct[$type] as $value) { // lấy sản phâm
-      foreach($cart as $item){
-        
-      }
+    
+     // 2) Chỉ lấy item đúng type hiện tại (iphone/macbook...)
+    $cartOfType = [];
+    foreach ($cart as $item) {
+        $itemType = (string)($item['type'] ?? '');
+        if ($itemType === (string)$type) {
+            $cartOfType[] = $item;
+        }
     }
-    // 2) Chuẩn hoá dữ liệu cart: mỗi item có variant_id và qty
-    // Ví dụ cart session bạn nên lưu:
+
+    // 3) Tạo map variant_id => quantity (gộp nếu trùng)
+    $qtyMap = []; // [variant_id => qty]
+    foreach ($cartOfType as $item) {
+        $vid = (int)($item['variant_id'] ?? 0);
+        $qty = (int)($item['quality'] ?? 0); // bạn đang dùng "quality" (số lượng)
+        if ($vid > 0 && $qty > 0) {
+            $qtyMap[$vid] = ($qtyMap[$vid] ?? 0) + $qty;
+        }
+    }
+
+    // 4) Dò sản phẩm trong dataProduct theo variant_id và đổ vào listProductDisplay
+    //    (mỗi item thêm field 'quality' để hiển thị số lượng)
+    foreach (($dataProduct[$type] ?? []) as $value) {
+        $vid = (int)($value['variant_id'] ?? 0);
+        if ($vid > 0 && isset($qtyMap[$vid])) {
+            $value['quality'] = $qtyMap[$vid]; // gắn số lượng từ session vào
+            $listProductDisplay[] = $value;
+        }
+    }
+    // Ví dụ cart session lưu:
     // $_SESSION['cart'] = [
     //   ['variant_id' => 101, 'id' => 2, type=>'iphone', quality=>1],
     //   ['variant_id' => 205, 'id' => 1, type=>'iphone', quality=>1],
     // ];
-
-    }
+  }
+  // xử lý thông tin người mua
+  
 ?>
 <div style="width:600px; margin:0 auto; background-color:#F5F5F7;">
   <div class="wrap">
@@ -75,7 +99,10 @@
               <?= number_format((float)($value['price'] ?? 0), 0, ',', '.') ?>đ
             </div>
             <div class="qty">
-              <input name="quantity_show" value="1" readonly />
+              <input name="quantity_show"
+                value="<?= (int)($value['quality'] ?? 1) ?: 1 ?>"
+                readonly />
+
             </div>
           </div>
         </div>
