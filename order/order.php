@@ -1,5 +1,6 @@
 <?php
     require_once __DIR__ . '/../config/config.php';// import luôn đúng dù có ở đâu
+    $userinfo = $_SESSION['user'] ?? null;
     $idproduct = $_GET['id'] ?? '';
     $idvariant = $_GET['variant'] ?? '';
     $type = $_GET['type'] ?? '';
@@ -13,47 +14,52 @@
         }
       }
     }else{ // khách hàng mua từ giỏ hàng
-        // 1) Lấy cart từ session (hỗ trợ nhiều key)
-    $cart = $_SESSION['cart'] ?? [];
-    if (!is_array($cart) || empty($cart)) {
-        $cart = [];
-    }
-    
-     // 2) Chỉ lấy item đúng type hiện tại (iphone/macbook...)
-    $cartOfType = [];
-    foreach ($cart as $item) {
-        $itemType = (string)($item['type'] ?? '');
-        if ($itemType === (string)$type) {
-            $cartOfType[] = $item;
-        }
-    }
+        $cartId = $_GET['cart-id'] ?? '';
+        // 1) Lấy cart (DB)
+        $stmtCart = $conn->prepare("
+          SELECT id, user_id, status, total_amount, created_at
+          FROM carts
+          WHERE id = ?
+          LIMIT 1
+        ");
+        $stmtCart->execute([$cartId]);
+        $cart = $stmtCart->fetch(PDO::FETCH_ASSOC);
 
-    // 3) Tạo map variant_id => quantity (gộp nếu trùng)
-    $qtyMap = []; // [variant_id => qty]
-    foreach ($cartOfType as $item) {
-        $vid = (int)($item['variant_id'] ?? 0);
-        $qty = (int)($item['quality'] ?? 0); // bạn đang dùng "quality" (số lượng)
-        if ($vid > 0 && $qty > 0) {
-            $qtyMap[$vid] = ($qtyMap[$vid] ?? 0) + $qty;
-        }
-    }
+        $sqlItems = "
+            SELECT
+              ci.id AS cart_item_id,
+              ci.cart_id,
+              ci.product_id,
+              ci.product_variant_id AS variant_id,
+              ci.quality AS quality,
+              ci.unit_price,
+              (ci.unit_price * ci.quality) AS line_total,
 
-    // 4) Dò sản phẩm trong dataProduct theo variant_id và đổ vào listProductDisplay
-    //    (mỗi item thêm field 'quality' để hiển thị số lượng)
-    foreach (($dataProduct[$type] ?? []) as $value) {
-        $vid = (int)($value['variant_id'] ?? 0);
-        if ($vid > 0 && isset($qtyMap[$vid])) {
-            $value['quality'] = $qtyMap[$vid]; // gắn số lượng từ session vào
-            $listProductDisplay[] = $value;
-        }
-    }
-    // Ví dụ cart session lưu:
-    // $_SESSION['cart'] = [
-    //   ['variant_id' => 101, 'id' => 2, type=>'iphone', quality=>1],
-    //   ['variant_id' => 205, 'id' => 1, type=>'iphone', quality=>1],
-    // ];
+              p.name,
+              p.type_id,
+
+              pv.color,
+              pv.color_hex,
+              pv.storage_gb,
+              pv.image_url
+            FROM cart_items ci
+            JOIN products p ON p.id = ci.product_id
+            JOIN product_variants pv ON pv.id = ci.product_variant_id
+            WHERE ci.cart_id = ?
+            ORDER BY ci.id DESC
+          ";
+          $stmtItems = $conn->prepare($sqlItems);
+          $stmtItems->execute([$cartId]);
+          $listProductDisplay = $stmtItems->fetchAll(PDO::FETCH_ASSOC) ?: [];
   }
-  // xử lý thông tin người mua
+  // xử lý tiến hành đặt hàng 
+ 
+  $cartTotal = 0;
+foreach ($listProductDisplay as $it) {
+  $price = (float)($it['unit_price'] ?? $it['price'] ?? 0);
+  $qty   = (int)($it['quality'] ?? 1);
+  $cartTotal += $price * $qty;
+}
   
 ?>
 <div style="width:600px; margin:0 auto; background-color:#F5F5F7;">
@@ -96,11 +102,11 @@
 
           <div class="item-right">
             <div class="price" style="font-size:16px">
-              <?= number_format((float)($value['price'] ?? 0), 0, ',', '.') ?>đ
+              <?= number_format((float)($value['line_total']??$value['price'] ), 0, ',', '.') ?>đ
             </div>
             <div class="qty">
               <input name="quantity_show"
-                value="<?= (int)($value['quality'] ?? 1) ?: 1 ?>"
+                value="<?= $value['quality']??1?>"
                 readonly />
 
             </div>
@@ -113,6 +119,7 @@
       <!-- FORM (HTML THUẦN - KHÔNG SUBMIT DB) -->
       <form id="orderForm" method="POST">
         <!-- Bạn giữ hidden nếu muốn test submit form -->
+         <input type="hidden" name="cart_id" value="<?= (int)($_GET['cart-id'] ?? 0) ?>">
         <input type="hidden" name="place_order" value="1">
         <input type="hidden" name="product_id" value="1">
         <input type="hidden" name="variant_id" value="101">
@@ -130,12 +137,12 @@
           <div class="grid-2">
             <div class="field">
               <label>Họ và Tên</label>
-              <input class="input" name="full_name" value="Nguyễn Văn A" />
+              <input class="input" name="full_name" value="<?=$userinfo['full_name']??''?>" />
             </div>
 
             <div class="field">
               <label>Số điện thoại</label>
-              <input class="input" name="phone" value="0901234567" />
+              <input class="input" name="phone" value="<?=$userinfo['phone']??''?>" />
             </div>
           </div>
         </div>
@@ -151,7 +158,7 @@
 
           <div class="ship-box">
             <div class="ship-grid">
-              <select name="province">
+              <!-- <select name="province">
                 <option value="">Chọn tỉnh, thành phố</option>
                 <option selected>TP. Hồ Chí Minh</option>
                 <option>Hà Nội</option>
@@ -163,9 +170,9 @@
                 <option selected>Quận 7</option>
                 <option>Quận 1</option>
                 <option>Hải Châu</option>
-              </select>
+              </select> -->
 
-              <input class="input full" name="address_detail" value="123 Đường ABC, Phường XYZ" placeholder="Địa chỉ cụ thể" />
+              <input class="input full" name="address_detail" value="<?=$userinfo['address']??''?>" placeholder="Địa chỉ cụ thể" />
             </div>
           </div>
 
@@ -179,7 +186,7 @@
           <div class="total-row">
             <div>Tổng tiền:</div>
             <div class="total" style="font-size:18px">
-              29.990.000đ
+              <?= number_format((float)($cartTotal ?? 0), 0, ',', '.') ?>đ
             </div>
           </div>
 
@@ -192,7 +199,7 @@
             </div>
           </div>
 
-          <button class="btn" id="btnCheckout" style="font-size:15px" type="submit">
+          <button class="btn" id="btnCheckout" style="font-size:15px" type="submit" name="submit_order">
             Tiến hành đặt hàng
           </button>
 
@@ -205,3 +212,86 @@
     </div>
   </div>
 </div>
+
+<?php
+if (isset($_POST['submit_order'])) {
+    $userId = (int)($_SESSION['user']['id'] ?? -1);
+    var_dump($userId);
+    if ($userId == -1) { // chưa đăng nhập
+      header('Location: /DA-cuoiky/index.php?mod=login');
+      exit;
+    }
+
+    // // LẤY cart_id TỪ POST
+    // $cartId = (int)($_POST['cart_id'] ?? 0);
+    // if ($cartId <= 0) { // a
+    //    header('Location: /DA-cuoiky/index.php?mod=login');
+    // }
+
+    // Lấy items trong cart
+    $stmt = $conn->prepare("
+        SELECT product_id, product_variant_id, quality, unit_price
+        FROM cart_items
+        WHERE cart_id = ?
+        ORDER BY id ASC
+    ");
+    $stmt->execute([$cartId]);
+    $cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    if (empty($cartItems)) {
+        $_SESSION['alert_error'] = "Giỏ hàng trống!";
+        // header("Location: /DA-cuoiky/index.php?mod=home");
+        exit;
+    }
+
+    // Tính tổng số lượng + tổng tiền (để bạn dùng sau)
+    $totalQty = 0;
+    $totalAmount = 0;
+    foreach ($cartItems as $it) {
+        $qty = (int)$it['quality'];
+        $price = (float)$it['unit_price'];
+        $totalQty += $qty;
+        $totalAmount += $price * $qty;
+    }
+
+    // Insert order (tối giản đúng theo schema của bạn có total_amount)
+    $insertOrderSql = "
+        INSERT INTO orders (user_id, cart_id, total_amount, quality, status, created_at)
+        VALUES (?, ?, ?, ?, 'pending', NOW())
+    ";
+    $stmtInsertOrder = $conn->prepare($insertOrderSql);
+    $stmtInsertOrder->execute([$userId, $cartId, $totalAmount, $totalQty]);
+
+    $orderId = (int)$conn->lastInsertId();
+
+    // Insert order items
+    $insertItemSql = "
+        INSERT INTO order_items (order_id, product_id, product_variant_id, quality, unit_price, line_total)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ";
+    $stmtInsertItem = $conn->prepare($insertItemSql);
+
+    foreach ($cartItems as $it) {
+        $qty = (int)$it['quality'];
+        $price = (float)$it['unit_price'];
+        $lineTotal = $price * $qty;
+
+        $stmtInsertItem->execute([
+            $orderId,
+            (int)$it['product_id'],
+            (int)$it['product_variant_id'],
+            $qty,
+            $price,
+            $lineTotal
+        ]);
+    }
+
+    // (tuỳ chọn) đổi trạng thái cart
+    $conn->prepare("UPDATE carts SET status='converted', total_amount=? WHERE id=?")
+         ->execute([$totalAmount, $cartId]);
+
+    $_SESSION['alert_success'] = "Đặt hàng thành công! Mã đơn #".$orderId;
+    header('Location: /DA-cuoiky/index.php?mod=home');
+    exit;
+}
+?>

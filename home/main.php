@@ -125,21 +125,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
 <main>
   <section class="hero-banner">
     <button class="slider-btn btn-prev" type="button"></button>
+<div class="hero-wrap">
+  <div class="hero-img">
+    <img src="/DA-cuoiky/image/banner-mac.png" alt="banner">
+  </div>
+</div>
 
-    <div class="hero-img" style="background: linear-gradient(to right, #000, #333);">
-      BANNER APPLE WATCH ULTRA 3
-    </div>
 
     <button class="slider-btn btn-next" type="button"></button>
   </section>
 
-  <section class="promo-section">
-    <div class="promo-img-placeholder">
-      BANNER GIẢI PHÁP DOANH NGHIỆP (Upload ảnh image_a3bdcf.jpg tại đây)
-    </div>
-  </section>
+  
 
-  <section class="product-section">
+  <section class="product-section" style="margin-top: 40px;">
     <?php
       // map tên hiển thị
       $typeLabel = [
@@ -165,14 +163,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             $name = $item['name'] ?? '';
             $gia = (float)($item['price'] ?? 0);
 
-            $img = $item['image_url'] ?? null;
+            $img = $item['image_url'] ?? "iphone.jpeg";
             $color = $item['color'] ?? '';
           ?>
           <a href="/DA-cuoiky/index.php?mod=detail&type=<?= urlencode($type) ?>&id=<?= $id ?>">
             <article class="product-card">
               <div class="prod-img-placeholder">
                 <?php if (!empty($img)): ?>
-                  <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($name) ?>" />
+                  <img src="/DA-cuoiky/image/<?=$img?>" alt="<?= htmlspecialchars($name) ?>" />
                 <?php else: ?>
                   Ảnh sản phẩm
                 <?php endif; ?>

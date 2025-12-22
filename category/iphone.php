@@ -18,6 +18,7 @@
         </div>
 <!-- banner -->
         <section class="category-banner">
+            <?php if($type == 'iphone') { ?>
             <div class="banner-content">
                 <h1>iPhone 17</h1>
                 <p>Sẵn hàng. Đủ màu. Mua ngay</p>
@@ -26,8 +27,15 @@
                 <a href="#" class="btn-buy-now">Mua ngay</a>
             </div>
             <div class="banner-image">
-                <div class="banner-img-placeholder">ẢNH BANNER IPHONE 17</div>
+                <div class="banner-img-placeholder">
+                    <img src="/DA-cuoiky/image/banner-iphone.png" alt="">
+                </div>
             </div>
+            <?php } else{ ?>
+                <div class="banner-content">
+                    <img src="/DA-cuoiky/image/banner-mac.png" alt="">
+                </div>
+                <?php } ?>
         </section>
 <!--  menu filter -->
         <section class="filter-bar-container">
@@ -72,7 +80,9 @@
                             <!-- <div class="badge badge-discount">Giảm 1%</div>
                             <div class="badge badge-new"><i class="fa-solid fa-tag"></i> Mới</div> -->
                             <div class="product-img">
-                                <div class="img-box">IMG iPhone 17 Pro Max</div>
+                                <div class="img-box">
+                                    <img src="/DA-cuoiky/image/<?=$item['image_url']??'iphone.jpeg'?>" alt="<?= htmlspecialchars($name) ?>" />
+                                </div>
                             </div>
                             <h3 class="product-name"><?=$item['name']?></h3>
                             <div class="price-row">

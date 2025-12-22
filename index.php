@@ -4,49 +4,51 @@ session_start();
 
 // 1) DB CONFIG
 include('./config/config.php');
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mod']) && $_POST['mod'] === 'cart_add') {
-    
-    // 1. Lấy dữ liệu từ form
-    $p_id     = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-    $v_id     = isset($_POST['variant']) ? (int)$_POST['variant'] : 0;
-    $type     = isset($_POST['type']) ? $_POST['type'] : 'iphone';
-    $quantity = 1; // Mặc định mỗi lần bấm là thêm 1
+
+// 2) USER SESSION
+$fullName = $_SESSION['user']['full_name'] ?? '';
+$userId   = (int)($_SESSION['user']['id'] ?? 0);
+
+// =========================================================================
+// 3) CONTROLLER: THÊM VÀO GIỎ HÀNG (cart_add)
+//    - Login: lưu DB (carts + cart_items)
+//    - Guest: lưu session
+// =========================================================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['mod'] ?? '') === 'cart_add') {
+
+    $p_id     = (int)($_POST['id'] ?? 0);
+    $v_id     = (int)($_POST['variant'] ?? 0);
+    $type     = (string)($_POST['type'] ?? 'iphone');
+    $quantity = 1;
 
     if ($p_id > 0 && $v_id > 0) {
-        
-        // 2. Kiểm tra người dùng đã đăng nhập chưa?
-        $userId = isset($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : 0;
 
-        // === TRƯỜNG HỢP A: ĐÃ ĐĂNG NHẬP (Lưu vào Database) ===
+        // ===== A) ĐÃ LOGIN => LƯU DB =====
         if ($userId > 0) {
-            // A1. Kiểm tra xem user này đã có giỏ hàng (active) chưa?
-            $stmt = $conn->prepare("SELECT id FROM carts WHERE user_id = ? AND status = 'active' LIMIT 1");
+
+            // A1) Lấy cart active hoặc tạo mới
+            $stmt = $conn->prepare("SELECT id FROM carts WHERE user_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
             $stmt->execute([$userId]);
             $cart = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$cart) {
-                // Chưa có -> Tạo giỏ hàng mới
                 $stmtNew = $conn->prepare("INSERT INTO carts (user_id, status, created_at) VALUES (?, 'active', NOW())");
                 $stmtNew->execute([$userId]);
-                $cartId = $conn->lastInsertId();
+                $cartId = (int)$conn->lastInsertId();
             } else {
-                // Đã có -> Lấy ID giỏ hàng
-                $cartId = $cart['id'];
+                $cartId = (int)$cart['id'];
             }
 
-            // A2. Lấy giá hiện tại của sản phẩm (để đảm bảo chính xác, không lấy từ form)
-            $stmtPrice = $conn->prepare("SELECT price FROM product_variants WHERE id = ?");
+            // A2) Lấy giá variant hiện tại để lưu unit_price
+            $stmtPrice = $conn->prepare("SELECT price FROM product_variants WHERE id = ? LIMIT 1");
             $stmtPrice->execute([$v_id]);
-            $vRow = $stmtPrice->fetch(PDO::FETCH_ASSOC);
-            $price = $vRow['price'] ?? 0;
+            $vRow  = $stmtPrice->fetch(PDO::FETCH_ASSOC);
+            $price = (float)($vRow['price'] ?? 0);
 
-            // A3. Thêm vào bảng cart_items
-            // Lưu ý: Cột số lượng trong DB của bạn tên là 'quality'
-            // Sử dụng ON DUPLICATE KEY UPDATE: Nếu sản phẩm đã có trong giỏ -> Tự động tăng số lượng
+            // A3) Insert/Update cart_items (schema có UNIQUE(cart_id, product_variant_id))
             $sqlInsert = "INSERT INTO cart_items (cart_id, product_id, product_variant_id, quality, unit_price, created_at)
                           VALUES (:cid, :pid, :vid, :qty, :price, NOW())
-                          ON DUPLICATE KEY UPDATE quality = quality + :qty";
-            
+                          ON DUPLICATE KEY UPDATE quality = quality + VALUES(quality)";
             $stmtIns = $conn->prepare($sqlInsert);
             $stmtIns->execute([
                 ':cid'   => $cartId,
@@ -55,26 +57,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mod']) && $_POST['mod
                 ':qty'   => $quantity,
                 ':price' => $price
             ]);
-        } 
-        
-        // === TRƯỜNG HỢP B: CHƯA ĐĂNG NHẬP (Lưu vào Session) ===
+
+        }
+        // ===== B) CHƯA LOGIN => LƯU SESSION =====
         else {
-            if (!isset($_SESSION['cart'])) {
+            if (!isset($_SESSION['cart']) || !is_array($_SESSION['cart'])) {
                 $_SESSION['cart'] = [];
             }
 
-            // Kiểm tra xem sản phẩm này đã có trong giỏ Session chưa
             $found = false;
             foreach ($_SESSION['cart'] as &$item) {
-                if ((int)$item['variant_id'] === $v_id) {
-                    $item['quantity'] += $quantity; // Tăng số lượng
+                if ((int)($item['variant_id'] ?? 0) === $v_id) {
+                    $item['quantity'] = (int)($item['quantity'] ?? 0) + $quantity;
                     $found = true;
                     break;
                 }
             }
-            unset($item); // Ngắt tham chiếu
+            unset($item);
 
-            // Nếu chưa có thì thêm mới
             if (!$found) {
                 $_SESSION['cart'][] = [
                     'id'         => $p_id,
@@ -85,186 +85,115 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mod']) && $_POST['mod
             }
         }
 
-        // 3. Thông báo và Quay lại trang cũ
         $_SESSION['alert_success'] = "Đã thêm vào giỏ hàng thành công!";
-        
-        // Redirect lại chính trang chi tiết sản phẩm
-        $url = "index.php?mod=detail&type=$type&id=$p_id";
+
+        // Redirect về trang detail
+        $url = "index.php?mod=detail&type=" . urlencode($type) . "&id=" . (int)$p_id;
         header("Location: $url");
         exit;
-    }
-}
-// --- KẾT THÚC PHẦN XỬ LÝ CART ---
-
-
-// 2) USER SESSION
-$fullName = $_SESSION['user']['full_name'] ?? '';
-$userId   = (int)($_SESSION['user']['id'] ?? 0);
-
-// =========================================================================
-// 3) CONTROLLER: XỬ LÝ THÊM VÀO GIỎ HÀNG (Logic Cart Add)
-// =========================================================================
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mod']) && $_POST['mod'] === 'cart_add') {
-    
-    $p_id      = (int)($_POST['id'] ?? 0);
-    $v_id      = (int)($_POST['variant'] ?? 0);
-    $p_type    = $_POST['type'] ?? 'iphone';
-    $quantity  = 1; // Mặc định thêm 1
-
-    if ($p_id > 0 && $v_id > 0) {
-        
-        // --- TRƯỜNG HỢP A: ĐÃ ĐĂNG NHẬP (Lưu vào Database) ---
-        if ($userId > 0) {
-            // 1. Kiểm tra/Tạo giỏ hàng active
-            $stmt = $conn->prepare("SELECT id FROM carts WHERE user_id = ? AND status = 'active' LIMIT 1");
-            $stmt->execute([$userId]);
-            $cart = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$cart) {
-                // Tạo giỏ mới
-                $stmtNew = $conn->prepare("INSERT INTO carts (user_id, status, created_at) VALUES (?, 'active', NOW())");
-                $stmtNew->execute([$userId]);
-                $cartId = $conn->lastInsertId();
-            } else {
-                $cartId = $cart['id'];
-            }
-
-            // 2. Lấy giá sản phẩm hiện tại để lưu vào cart_items
-            $stmtPrice = $conn->prepare("SELECT price FROM product_variants WHERE id = ?");
-            $stmtPrice->execute([$v_id]);
-            $vRow = $stmtPrice->fetch(PDO::FETCH_ASSOC);
-            $price = $vRow['price'] ?? 0;
-
-            // 3. Thêm vào cart_items (Nếu trùng variant thì tăng số lượng - dùng ON DUPLICATE KEY UPDATE)
-            // Lưu ý: Table cart_items của bạn cần có UNIQUE KEY(cart_id, product_variant_id) như trong schema đã gửi
-            $sqlInsert = "INSERT INTO cart_items (cart_id, product_id, product_variant_id, quality, unit_price, created_at)
-                          VALUES (:cid, :pid, :vid, :qty, :price, NOW())
-                          ON DUPLICATE KEY UPDATE quality = quality + :qty";
-            
-            $stmtIns = $conn->prepare($sqlInsert);
-            $stmtIns->execute([
-                ':cid' => $cartId,
-                ':pid' => $p_id,
-                ':vid' => $v_id,
-                ':qty' => $quantity,
-                ':price' => $price
-            ]);
-        } 
-        
-        // --- TRƯỜNG HỢP B: KHÁCH VÃNG LAI (Lưu vào Session) ---
-        // (Chúng ta vẫn lưu Session kể cả khi đã login để đồng bộ trải nghiệm nếu cần, 
-        // nhưng ở đây tôi tách ra else để tránh dư thừa, hoặc bạn có thể lưu cả 2)
-        else {
-            if (!isset($_SESSION['cart'])) {
-                $_SESSION['cart'] = [];
-            }
-
-            // Kiểm tra xem variant này đã có trong session chưa
-            $found = false;
-            foreach ($_SESSION['cart'] as &$item) {
-                if ((int)$item['variant_id'] === $v_id) {
-                    $item['quantity'] += $quantity;
-                    $found = true;
-                    break;
-                }
-            }
-            unset($item); // Phá tham chiếu
-
-            if (!$found) {
-                $_SESSION['cart'][] = [
-                    'id'         => $p_id,
-                    'variant_id' => $v_id,
-                    'type'       => $p_type,
-                    'quantity'   => $quantity
-                ];
-            }
-        }
-
-        // --- Redirect lại trang chi tiết ---
-        $url = "index.php?mod=detail&type=$p_type&id=$p_id";
-        header("Location: $url");
+    } else {
+        $_SESSION['alert_error'] = "Thiếu dữ liệu sản phẩm!";
+        header("Location: index.php?mod=home");
         exit;
     }
 }
 
-// =========================================================================
 // 4) LOAD MINI CART DATA (Hiển thị)
-// =========================================================================
 $mini_cart_items = [];
 $mini_cart_total = 0;
 
-// Hàm tạo slug hỗ trợ ảnh
-if (!function_exists('createSlug')) {
-    function createSlug($str) {
-        $str = trim(mb_strtolower($str));
-        $str = preg_replace('/(à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ)/', 'a', $str);
-        $str = preg_replace('/(è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ)/', 'e', $str);
-        $str = preg_replace('/(ì|í|ị|ỉ|ĩ)/', 'i', $str);
-        $str = preg_replace('/(ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ)/', 'o', $str);
-        $str = preg_replace('/(ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ)/', 'u', $str);
-        $str = preg_replace('/(ỳ|ý|ỵ|ỷ|ỹ)/', 'y', $str);
-        $str = preg_replace('/(đ)/', 'd', $str);
-        $str = preg_replace('/[^a-z0-9-\s]/', '', $str);
-        $str = preg_replace('/([\s]+)/', '-', $str);
-        return $str;
-    }
-}
-
 // -- LOGIC LOAD MINI CART --
 if (isset($conn)) {
-    // A. Nếu đã login -> Lấy từ DB
+
+    // A) Nếu đã login -> lấy từ DB
     if ($userId > 0) {
         try {
-            $stmtC = $conn->prepare("SELECT id FROM carts WHERE user_id = ? AND status = 'active' LIMIT 1");
+            $stmtC = $conn->prepare("SELECT id FROM carts WHERE user_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
             $stmtC->execute([$userId]);
             $cartRow = $stmtC->fetch(PDO::FETCH_ASSOC);
 
             if ($cartRow) {
-                // Lấy chi tiết items
-                $sqlMini = "SELECT ci.quality as quantity, p.name, p.slug, pv.color, pv.price, pv.image_url
-                            FROM cart_items ci
-                            JOIN product_variants pv ON ci.product_variant_id = pv.id
-                            JOIN products p ON pv.product_id = p.id
-                            WHERE ci.cart_id = ?";
+                $cartId = (int)$cartRow['id'];
+
+                // Lấy items: ưu tiên unit_price trong cart_items (đúng lúc user add)
+                $sqlMini = "
+    SELECT
+  ci.id,
+  ci.cart_id AS cart_id,
+  ci.quality AS quantity,
+  p.name,
+  pv.color,
+  pv.image_url,
+  ci.unit_price AS price
+FROM cart_items ci
+JOIN product_variants pv ON ci.product_variant_id = pv.id
+JOIN products p ON pv.product_id = p.id
+WHERE ci.cart_id = ?
+ORDER BY ci.id DESC
+
+";
                 $stmtMini = $conn->prepare($sqlMini);
-                $stmtMini->execute([$cartRow['id']]);
+                $stmtMini->execute([$cartId]);
                 $mini_cart_items = $stmtMini->fetchAll(PDO::FETCH_ASSOC) ?: [];
             }
-        } catch (Exception $e) { /* Ignore */ }
-    } 
-    // B. Nếu chưa login -> Lấy từ SESSION
+        } catch (Throwable $e) {
+            // ignore
+        }
+    }
+
+    // B) Nếu chưa login -> lấy từ SESSION + query DB để lấy thông tin hiển thị
     else {
-        if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
-            // Lấy danh sách ID variant từ session để query DB lấy thông tin (tên, giá, ảnh)
-            $ids = array_column($_SESSION['cart'], 'variant_id');
+        if (!empty($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+
+            $ids = [];
+            foreach ($_SESSION['cart'] as $s) {
+                $vid = (int)($s['variant_id'] ?? 0);
+                if ($vid > 0) $ids[] = $vid;
+            }
+            $ids = array_values(array_unique($ids));
+
             if (!empty($ids)) {
-                // Query DB lấy thông tin sản phẩm
                 $placeholders = implode(',', array_fill(0, count($ids), '?'));
-                $sqlSess = "SELECT pv.id as variant_id, p.name, p.slug, pv.color, pv.price, pv.image_url
-                            FROM product_variants pv
-                            JOIN products p ON pv.product_id = p.id
-                            WHERE pv.id IN ($placeholders)";
-                
+
+                // lấy info theo variant_id
+                $sqlSess = "
+                    SELECT
+                      pv.id AS variant_id,
+                      p.name,
+                      pv.color,
+                      pv.price AS price,
+                      pv.image_url
+                    FROM product_variants pv
+                    JOIN products p ON pv.product_id = p.id
+                    WHERE pv.id IN ($placeholders)
+                ";
                 try {
                     $stmtSess = $conn->prepare($sqlSess);
                     $stmtSess->execute($ids);
-                    $productsInfo = $stmtSess->fetchAll(PDO::FETCH_ASSOC);
+                    $productsInfo = $stmtSess->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-                    // Map lại quantity từ Session vào data vừa lấy từ DB
-                    // Vì DB chỉ trả về thông tin sp, còn số lượng nằm trong Session
+                    // map quantity từ session
                     foreach ($productsInfo as $prod) {
                         $qty = 0;
                         foreach ($_SESSION['cart'] as $sessItem) {
-                            if ((int)$sessItem['variant_id'] === (int)$prod['variant_id']) {
-                                $qty = $sessItem['quantity'];
+                            if ((int)($sessItem['variant_id'] ?? 0) === (int)$prod['variant_id']) {
+                                $qty = (int)($sessItem['quantity'] ?? 0);
                                 break;
                             }
                         }
                         $prod['quantity'] = $qty;
-                        $mini_cart_items[] = $prod;
+                        $mini_cart_items[] = [
+                            'name'     => $prod['name'],
+                            'color'    => $prod['color'],
+                            'image_url'=> $prod['image_url'],
+                            'price'    => $prod['price'],
+                            'quantity' => $qty
+                        ];
                     }
 
-                } catch (Exception $e) { /* Ignore */ }
+                } catch (Throwable $e) {
+                    // ignore
+                }
             }
         }
     }
@@ -361,11 +290,10 @@ if (isset($conn)) {
                 <div class="cart-btn" id="cartBtn">
                     <i class="fa-solid fa-cart-shopping"></i>
                     <span>Giỏ hàng</span>
-                    <?php 
-                        // Đếm tổng số lượng item
+                    <?php
                         $totalCount = 0;
                         foreach($mini_cart_items as $itm) {
-                            $totalCount += $itm['quantity'];
+                            $totalCount += (int)($itm['quantity'] ?? 0);
                         }
                     ?>
                     <?php if ($totalCount > 0): ?>
@@ -381,36 +309,38 @@ if (isset($conn)) {
                             <div class="empty-msg">Giỏ hàng đang trống</div>
                         <?php else: ?>
                             <?php foreach ($mini_cart_items as $item):
-                                $sub = (float)$item['price'] * (int)$item['quantity'];
+                                $price = (float)($item['price'] ?? 0);
+                                $qty   = (int)($item['quantity'] ?? 0);
+                                $sub   = $price * $qty;
                                 $mini_cart_total += $sub;
 
                                 $img = !empty($item['image_url'])
                                     ? $item['image_url']
-                                    : 'img/products/' . createSlug($item['name']) . '.jpg';
+                                    : 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=900&q=80';
                             ?>
                                 <div class="mini-cart-item">
                                     <img src="<?php echo htmlspecialchars($img); ?>" alt="Img" class="mini-item-img"
                                          onerror="this.src='img/no-image.jpg'">
                                     <div class="mini-item-info">
-                                        <a href="#" class="mini-item-name"><?php echo htmlspecialchars($item['name']); ?></a>
+                                        <a href="#" class="mini-item-name"><?php echo htmlspecialchars($item['name'] ?? ''); ?></a>
                                         <div class="mini-item-meta">
-                                            Màu: <?php echo htmlspecialchars($item['color']); ?><br>
-                                            SL: <?php echo (int)$item['quantity']; ?>
+                                            Màu: <?php echo htmlspecialchars($item['color'] ?? ''); ?><br>
+                                            SL: <?php echo $qty; ?>
                                         </div>
                                     </div>
-                                    <div class="mini-item-price"><?php echo number_format((float)$item['price'], 0, ',', '.'); ?>₫</div>
+                                    <div class="mini-item-price"><?php echo number_format($price, 0, ',', '.'); ?>₫</div>
                                 </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
 
                     <?php if (!empty($mini_cart_items)): ?>
-                        <div class="mini-cart-footer">
+                        <div class="mini-cart-footer"> 
                             <div class="mini-total">
                                 <span>Tổng cộng:</span>
                                 <span style="color:#d70018"><?php echo number_format((float)$mini_cart_total, 0, ',', '.'); ?>₫</span>
                             </div>
-                            <a href="/DA-cuoiky/cart/cart.php" class="btn-view-cart">XEM GIỎ HÀNG & THANH TOÁN</a>
+                            <a href="/DA-cuoiky/index.php?mod=order&cart-id=<?=$mini_cart_items[0]['cart_id']?>" class="btn-view-cart">Thanh Toán</a>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -431,6 +361,17 @@ if (isset($conn)) {
                         <span>Đăng nhập</span>
                     </a>
                 <?php endif; ?>
+                <?php
+                        $user = $_SESSION['user'] ?? null;
+                     if(isset($user) && $user['role'] == 'admin'){
+                ?>
+                <br>
+               <a href="/DA-cuoiky/index.php?mod=admin" class="account-btn" style="text-decoration:none; margin-left:10px;">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <span>vào trang quản lý</span>
+                    </a>
+                <?php } ?>
+                    
             </div>
 
         </div>

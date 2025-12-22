@@ -3,6 +3,17 @@ USE apple_store;
 -- 1) INSERT PRODUCTS
 -- type_id: 1=iPhone, 2=MacBook
 -- =========================================
+INSERT INTO users (role, user_name, hash_pass, full_name, phone, address, created_at)
+VALUES (
+  'admin',
+  'admin',
+  "$2y$10$H6o0Or1tsPq/esGMNXbs.uMl3LrBO4WZqfpBGUME.OObIXsMMFC.K",
+  'Quản trị viên',
+  '0900000000',
+  'Hà Nội',
+  NOW()
+);
+
 INSERT INTO products (name, type_id, description, active) VALUES
 -- iPhone 14 series
 ('iPhone 14', 1, 'Apple iPhone 14', 1),

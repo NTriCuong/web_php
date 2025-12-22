@@ -13,6 +13,8 @@
         include('./order/order.php');
     else if($mod === "register")
         include("./login/register.php");
+    elseif($mod === "admin")
+        include("./admin/admin_product.php");
     elseif($mod === "logout")
     {
             // Xóa thông tin user

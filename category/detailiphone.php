@@ -67,7 +67,7 @@ $fmtVnd = fn($n) => number_format((float)$n, 0, ',', '.') . '₫';
 // ảnh fallback nếu NULL
 $defaultImg = $defaultVariant['image_url'] ?? null;
 if (empty($defaultImg)) {
-    $defaultImg = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=900&q=80";
+    $defaultImg = "macbook.png";
 }
 ?>
 
@@ -87,7 +87,7 @@ if (empty($defaultImg)) {
         <div class="detail-left">
             <div class="main-image-box">
                 <div class="img-placeholder-large">
-                    <img id="mainImg" src="<?= $defaultImg ?>" alt="<?= $dataDetail['name'] ?? 'Sản phẩm' ?>">
+                    <img id="mainImg" src="/DA-cuoiky/image/<?= $defaultImg ?>" alt="<?= $dataDetail['name'] ?? 'Sản phẩm' ?>">
                 </div>
             </div>
         </div>
@@ -193,107 +193,107 @@ if (empty($defaultImg)) {
 </div>
 
 <script>
-// Lấy dữ liệu variant từ PHP
 const variantsByStorage = <?= json_encode($byStorage, JSON_UNESCAPED_UNICODE); ?>;
 
-// Khai báo các element
 const storageGroup  = document.getElementById('storageGroup');
 const colorGroup    = document.getElementById('colorGroup');
 const currentPrice  = document.getElementById('currentPrice');
 const colorText     = document.getElementById('colorText');
-const variantIdInp  = document.getElementById('variantId');
 const mainImg       = document.getElementById('mainImg');
 
-// Form Mua Ngay
-const variantIdForm = document.getElementById('variantIdForm'); 
+const variantIdForm = document.getElementById('variantIdForm'); // form mua ngay
+const variantIdCart = document.getElementById('variantIdCart'); // form thêm giỏ
+const variantIdInp  = document.getElementById('variantId');     // hidden chung (nếu có)
 
-// --- BỔ SUNG: Form Thêm Vào Giỏ ---
-const variantIdCart = document.getElementById('variantIdCart'); 
-
-// Hàm định dạng tiền tệ
 function fmtVnd(n){
-  return new Intl.NumberFormat('vi-VN').format(n) + '₫';
+  return new Intl.NumberFormat('vi-VN').format(Number(n || 0)) + '₫';
 }
 
-// Hàm set active cho nút dung lượng
-function setActiveStorageBtn(storage){
-  storageGroup.querySelectorAll('.option-btn').forEach(b=>{
-    b.classList.toggle('active', Number(b.dataset.storage) === Number(storage));
+function setActiveStorage(storage){
+  storageGroup.querySelectorAll('.option-btn').forEach(btn=>{
+    btn.classList.toggle('active', Number(btn.dataset.storage) === Number(storage));
   });
 }
 
-// Hàm set thông tin biến thể (QUAN TRỌNG)
 function setVariant(v){
-  // 1. Cập nhật giá và text hiển thị
-  currentPrice.textContent = fmtVnd(v.price);
-  if (colorText) colorText.textContent = v.color_name;
-  
-  // 2. Cập nhật input hidden chung (nếu có dùng)
-  if (variantIdInp) variantIdInp.value = v.id;
+  if (!v) return;
 
-  // 3. Cập nhật ID cho form MUA NGAY
-  if (variantIdForm) variantIdForm.value = v.id; 
+  if (currentPrice) currentPrice.textContent = fmtVnd(v.price);
+  if (colorText) colorText.textContent = v.color_name || '';
 
-  // 4. --- QUAN TRỌNG: Cập nhật ID cho form GIỎ HÀNG ---
-  if (variantIdCart) {
-      variantIdCart.value = v.id;
-      console.log("Đã cập nhật variant giỏ hàng: " + v.id); // Dòng này để kiểm tra log (F12)
-  }
+  if (variantIdForm) variantIdForm.value = v.id;
+  if (variantIdCart) variantIdCart.value = v.id;
+  if (variantIdInp)  variantIdInp.value  = v.id;
 
-  // 5. Đổi ảnh nếu có
-  if (mainImg && v.image_url) {
+  if (mainImg && v.image_url && v.image_url.trim() !== '') {
     mainImg.src = v.image_url;
   }
 }
 
-// Hàm render màu sắc dựa theo dung lượng
-function renderColors(storage){
+/** Render TẤT CẢ màu của 1 dung lượng */
+function renderColorsByStorage(storage){
   const list = variantsByStorage[storage] || [];
   colorGroup.innerHTML = '';
 
-  list.forEach((v, idx) => {
+  if (!list.length) {
+    colorGroup.innerHTML = '<div style="font-size:13px;color:#6b7280">Không có màu cho dung lượng này</div>';
+    return;
+  }
+
+  let pick = null; // variant sẽ auto chọn
+  for (const v of list) {
+    if (Number(v.stock) > 0) { pick = v; break; }
+  }
+  if (!pick) pick = list[0]; // nếu hết hàng hết thì vẫn chọn cái đầu
+
+  list.forEach((v) => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'color-circle' + (idx === 0 ? ' active' : '');
-    btn.title = v.color_name;
-    btn.style.backgroundColor = v.color_hex;
+    btn.className = 'color-circle';
+    btn.title = v.color_name || '';
+    btn.style.backgroundColor = v.color_hex || '#000';
 
-    // Xử lý hết hàng
-    if (v.stock <= 0) {
+    if (Number(v.stock) <= 0) {
       btn.disabled = true;
       btn.style.opacity = '0.35';
       btn.style.cursor = 'not-allowed';
-      btn.title = v.color_name + ' (Hết hàng)';
+      btn.title = (v.color_name || '') + ' (Hết hàng)';
     }
 
-    // Sự kiện click chọn màu
     btn.addEventListener('click', () => {
       colorGroup.querySelectorAll('.color-circle').forEach(x => x.classList.remove('active'));
       btn.classList.add('active');
-      setVariant(v); // Gọi hàm update ID
+      setVariant(v);
     });
 
     colorGroup.appendChild(btn);
-  });
 
-  // Tự động chọn màu đầu tiên còn hàng
-  const firstEnabled = colorGroup.querySelector('.color-circle:not([disabled])');
-  if (firstEnabled) firstEnabled.click();
+    // set active cho màu đang pick
+    if (Number(v.id) === Number(pick.id)) {
+      // click giả để đồng bộ UI + hidden + giá
+      setTimeout(() => btn.click(), 0);
+    }
+  });
 }
 
-// Sự kiện click chọn dung lượng
+// Click dung lượng => đổi danh sách màu
 storageGroup.addEventListener('click', (e) => {
   const btn = e.target.closest('.option-btn');
   if (!btn) return;
 
   const storage = btn.dataset.storage;
-  setActiveStorageBtn(storage);
-  renderColors(storage);
+  setActiveStorage(storage);
+  renderColorsByStorage(storage); // ✅ đây là phần hiển thị tất cả màu theo dung lượng
 });
 
-// Khởi chạy lần đầu (Init)
-const defaultStorage = storageGroup.querySelector('.option-btn.active')?.dataset.storage
-                    || Object.keys(variantsByStorage)[0];
-setActiveStorageBtn(defaultStorage);
-renderColors(defaultStorage);
-</script>>
+// INIT
+(() => {
+  const defaultStorage =
+    storageGroup.querySelector('.option-btn.active')?.dataset.storage
+    || Object.keys(variantsByStorage)[0];
+
+  setActiveStorage(defaultStorage);
+  renderColorsByStorage(defaultStorage);
+})();
+</script>
+

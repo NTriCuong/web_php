@@ -39,23 +39,20 @@
         .nav-item:hover { color: #fff; }
 
         /* --- HERO BANNER (Apple Watch) --- */
-        .hero-banner {
-            width: 100%;
-            background-color: #000; /* Nền đen cho banner Apple Watch */
-            position: relative;
-            display: flex;
-            justify-content: center;
-        }
-        .hero-img {
-            width: 100%;
-            max-width: 1600px; /* Giới hạn chiều rộng ảnh */
-            height: auto;
-            object-fit: cover;
-            /* Placeholder styles */
-            min-height: 400px;
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 24px; border-bottom: 1px solid #333;
-        }
+        .hero-img{
+  display: inline-block;              /* ôm vừa nội dung */
+  background: linear-gradient(to right, #000, #333);
+  border-radius: 16px;                /* optional */
+  overflow: hidden;
+}
+
+.hero-img img{
+  display: block;                     /* bỏ khoảng trắng dưới ảnh */
+  width: auto;                        /* giữ đúng kích thước ảnh */
+  max-width: 100%;                    /* chống tràn trên màn nhỏ */
+  height: auto;
+}
+
         .slider-btn {
             position: absolute; top: 50%; transform: translateY(-50%);
             background: rgba(255,255,255,0.1); color: white;
