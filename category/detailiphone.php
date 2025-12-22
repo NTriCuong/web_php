@@ -160,15 +160,28 @@ if (empty($defaultImg)) {
                 </div>
             </div>
 
-            <div class="action-buttons">
-                <form action="/DA-cuoiky/index.php" method="GET" id="buyNowForm">
-                    <input type="hidden" name="mod" value="order">
-                    <input type="hidden" name="id" value="<?= (int)$idProduct ?>">
-                    <input type="hidden" name="type" value="<?=$type?>">
-                    <!-- đổi id để không trùng; JS sẽ sync -->
-                    <input type="hidden" name="variant" id="variantIdForm" value="<?= $defaultVariant ? (int)$defaultVariant['id'] : '' ?>">
-                    <button class="btn-buy-now" type="submit">MUA NGAY</button>
-                </form>
+           <div class="action-buttons">
+                <div class="btn-row-group">
+                    <form action="/DA-cuoiky/index.php" method="POST" class="form-half">
+                        <input type="hidden" name="mod" value="cart_add"> 
+                        <input type="hidden" name="id" value="<?= (int)$idProduct ?>">
+                        <input type="hidden" name="type" value="<?=$type?>">
+                        <input type="hidden" name="variant" id="variantIdCart" value="<?= $defaultVariant ? (int)$defaultVariant['id'] : '' ?>">
+                        
+                        <button class="btn-add-cart" type="submit">
+                            <i class="fa-solid fa-cart-plus"></i> Thêm vào giỏ
+                        </button>
+                    </form>
+
+                    <form action="/DA-cuoiky/index.php" method="GET" id="buyNowForm" class="form-half">
+                        <input type="hidden" name="mod" value="order">
+                        <input type="hidden" name="id" value="<?= (int)$idProduct ?>">
+                        <input type="hidden" name="type" value="<?=$type?>">
+                        <input type="hidden" name="variant" id="variantIdForm" value="<?= $defaultVariant ? (int)$defaultVariant['id'] : '' ?>">
+                        
+                        <button class="btn-buy-now" type="submit">MUA NGAY</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -180,38 +193,61 @@ if (empty($defaultImg)) {
 </div>
 
 <script>
+// Lấy dữ liệu variant từ PHP
 const variantsByStorage = <?= json_encode($byStorage, JSON_UNESCAPED_UNICODE); ?>;
 
+// Khai báo các element
 const storageGroup  = document.getElementById('storageGroup');
 const colorGroup    = document.getElementById('colorGroup');
 const currentPrice  = document.getElementById('currentPrice');
 const colorText     = document.getElementById('colorText');
 const variantIdInp  = document.getElementById('variantId');
-const variantIdForm = document.getElementById('variantIdForm');
 const mainImg       = document.getElementById('mainImg');
 
+// Form Mua Ngay
+const variantIdForm = document.getElementById('variantIdForm'); 
+const variantIdCart = document.getElementById('variantIdCart');
+
+// --- BỔ SUNG: Form Thêm Vào Giỏ ---
+const variantIdCart = document.getElementById('variantIdCart'); 
+
+// Hàm định dạng tiền tệ
 function fmtVnd(n){
   return new Intl.NumberFormat('vi-VN').format(n) + '₫';
 }
 
+// Hàm set active cho nút dung lượng
 function setActiveStorageBtn(storage){
   storageGroup.querySelectorAll('.option-btn').forEach(b=>{
     b.classList.toggle('active', Number(b.dataset.storage) === Number(storage));
   });
 }
 
+// Hàm set thông tin biến thể (QUAN TRỌNG)
 function setVariant(v){
+  // 1. Cập nhật giá và text hiển thị
   currentPrice.textContent = fmtVnd(v.price);
-  variantIdInp.value = v.id;
-  if (variantIdForm) variantIdForm.value = v.id; // sync vào form mua ngay
   if (colorText) colorText.textContent = v.color_name;
+  
+  // 2. Cập nhật input hidden chung (nếu có dùng)
+  if (variantIdInp) variantIdInp.value = v.id;
 
-  // nếu có ảnh theo variant thì đổi ảnh
+  // 3. Cập nhật ID cho form MUA NGAY
+  if (variantIdForm) variantIdForm.value = v.id; 
+
+  // 4. --- QUAN TRỌNG: Cập nhật ID cho form GIỎ HÀNG ---
+  if (variantIdCart) {
+      variantIdCart.value = v.id;
+      console.log("Đã cập nhật variant giỏ hàng: " + v.id); // Dòng này để kiểm tra log (F12)
+  }
+
+  // 5. Đổi ảnh nếu có
   if (mainImg && v.image_url) {
     mainImg.src = v.image_url;
   }
 }
 
+// Hàm render màu sắc dựa theo dung lượng
 function renderColors(storage){
   const list = variantsByStorage[storage] || [];
   colorGroup.innerHTML = '';
@@ -223,6 +259,7 @@ function renderColors(storage){
     btn.title = v.color_name;
     btn.style.backgroundColor = v.color_hex;
 
+    // Xử lý hết hàng
     if (v.stock <= 0) {
       btn.disabled = true;
       btn.style.opacity = '0.35';
@@ -230,20 +267,22 @@ function renderColors(storage){
       btn.title = v.color_name + ' (Hết hàng)';
     }
 
+    // Sự kiện click chọn màu
     btn.addEventListener('click', () => {
       colorGroup.querySelectorAll('.color-circle').forEach(x => x.classList.remove('active'));
       btn.classList.add('active');
-      setVariant(v);
+      setVariant(v); // Gọi hàm update ID
     });
 
     colorGroup.appendChild(btn);
   });
 
-  // auto chọn màu đầu tiên còn hàng
+  // Tự động chọn màu đầu tiên còn hàng
   const firstEnabled = colorGroup.querySelector('.color-circle:not([disabled])');
   if (firstEnabled) firstEnabled.click();
 }
 
+// Sự kiện click chọn dung lượng
 storageGroup.addEventListener('click', (e) => {
   const btn = e.target.closest('.option-btn');
   if (!btn) return;
@@ -253,9 +292,9 @@ storageGroup.addEventListener('click', (e) => {
   renderColors(storage);
 });
 
-// init
+// Khởi chạy lần đầu (Init)
 const defaultStorage = storageGroup.querySelector('.option-btn.active')?.dataset.storage
                     || Object.keys(variantsByStorage)[0];
 setActiveStorageBtn(defaultStorage);
 renderColors(defaultStorage);
-</script>
+</script>>

@@ -350,28 +350,67 @@ header {
 }
 
 /* Nút Mua hàng */
-.action-buttons {
+/* --- BUTTONS GROUP (THÊM MỚI) --- */
+
+/* Wrapper để xếp 2 nút nằm ngang */
+.btn-row-group {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
+    gap: 15px; /* Khoảng cách giữa 2 nút */
+    width: 100%;
 }
 
-.btn-buy-now {
+/* Đảm bảo 2 form chia đều 50% diện tích */
+.form-half {
+    flex: 1;
+}
+
+/* Style chung cho cả 2 nút */
+.btn-buy-now, .btn-add-cart {
     width: 100%;
-    padding: 15px;
+    height: 56px; /* Chiều cao cố định bằng nhau */
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+}
+
+/* Style nút MUA NGAY (giữ nguyên style cũ nhưng chỉnh lại chút) */
+.btn-buy-now {
     background-color: #0066CC;
     color: white;
     border: none;
-    border-radius: 8px;
-    font-size: 18px;
-    font-weight: bold;
-    cursor: pointer;
-    text-transform: uppercase;
-    transition: background 0.3s;
 }
-
 .btn-buy-now:hover {
     background-color: #005bb5;
+    box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+}
+
+/* Style nút THÊM VÀO GIỎ (Nền trắng, viền xanh) */
+.btn-add-cart {
+    background-color: #fff;
+    color: #0066CC;
+    border: 1px solid #0066CC;
+    gap: 8px; /* Khoảng cách icon và chữ */
+}
+.btn-add-cart i {
+    font-size: 18px;
+}
+.btn-add-cart:hover {
+    background-color: #f0f8ff; /* Màu xanh nhạt khi di chuột */
+    border-color: #005bb5;
+    color: #005bb5;
+}
+
+/* Responsive: Trên mobile màn hình nhỏ thì xếp dọc */
+@media (max-width: 480px) {
+    .btn-row-group {
+        flex-direction: column;
+    }
 }
 
 .btn-installment {

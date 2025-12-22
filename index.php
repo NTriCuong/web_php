@@ -1,23 +1,199 @@
 <?php
 ob_start();
-// 1) SESSION
-    session_start();
+session_start();
 
-// 2) DB
+// 1) DB CONFIG
 include('./config/config.php');
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mod']) && $_POST['mod'] === 'cart_add') {
+    
+    // 1. Lấy dữ liệu từ form
+    $p_id     = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    $v_id     = isset($_POST['variant']) ? (int)$_POST['variant'] : 0;
+    $type     = isset($_POST['type']) ? $_POST['type'] : 'iphone';
+    $quantity = 1; // Mặc định mỗi lần bấm là thêm 1
 
-// 3) USER SESSION
+    if ($p_id > 0 && $v_id > 0) {
+        
+        // 2. Kiểm tra người dùng đã đăng nhập chưa?
+        $userId = isset($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : 0;
+
+        // === TRƯỜNG HỢP A: ĐÃ ĐĂNG NHẬP (Lưu vào Database) ===
+        if ($userId > 0) {
+            // A1. Kiểm tra xem user này đã có giỏ hàng (active) chưa?
+            $stmt = $conn->prepare("SELECT id FROM carts WHERE user_id = ? AND status = 'active' LIMIT 1");
+            $stmt->execute([$userId]);
+            $cart = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$cart) {
+                // Chưa có -> Tạo giỏ hàng mới
+                $stmtNew = $conn->prepare("INSERT INTO carts (user_id, status, created_at) VALUES (?, 'active', NOW())");
+                $stmtNew->execute([$userId]);
+                $cartId = $conn->lastInsertId();
+            } else {
+                // Đã có -> Lấy ID giỏ hàng
+                $cartId = $cart['id'];
+            }
+
+            // A2. Lấy giá hiện tại của sản phẩm (để đảm bảo chính xác, không lấy từ form)
+            $stmtPrice = $conn->prepare("SELECT price FROM product_variants WHERE id = ?");
+            $stmtPrice->execute([$v_id]);
+            $vRow = $stmtPrice->fetch(PDO::FETCH_ASSOC);
+            $price = $vRow['price'] ?? 0;
+
+            // A3. Thêm vào bảng cart_items
+            // Lưu ý: Cột số lượng trong DB của bạn tên là 'quality'
+            // Sử dụng ON DUPLICATE KEY UPDATE: Nếu sản phẩm đã có trong giỏ -> Tự động tăng số lượng
+            $sqlInsert = "INSERT INTO cart_items (cart_id, product_id, product_variant_id, quality, unit_price, created_at)
+                          VALUES (:cid, :pid, :vid, :qty, :price, NOW())
+                          ON DUPLICATE KEY UPDATE quality = quality + :qty";
+            
+            $stmtIns = $conn->prepare($sqlInsert);
+            $stmtIns->execute([
+                ':cid'   => $cartId,
+                ':pid'   => $p_id,
+                ':vid'   => $v_id,
+                ':qty'   => $quantity,
+                ':price' => $price
+            ]);
+        } 
+        
+        // === TRƯỜNG HỢP B: CHƯA ĐĂNG NHẬP (Lưu vào Session) ===
+        else {
+            if (!isset($_SESSION['cart'])) {
+                $_SESSION['cart'] = [];
+            }
+
+            // Kiểm tra xem sản phẩm này đã có trong giỏ Session chưa
+            $found = false;
+            foreach ($_SESSION['cart'] as &$item) {
+                if ((int)$item['variant_id'] === $v_id) {
+                    $item['quantity'] += $quantity; // Tăng số lượng
+                    $found = true;
+                    break;
+                }
+            }
+            unset($item); // Ngắt tham chiếu
+
+            // Nếu chưa có thì thêm mới
+            if (!$found) {
+                $_SESSION['cart'][] = [
+                    'id'         => $p_id,
+                    'variant_id' => $v_id,
+                    'type'       => $type,
+                    'quantity'   => $quantity
+                ];
+            }
+        }
+
+        // 3. Thông báo và Quay lại trang cũ
+        $_SESSION['alert_success'] = "Đã thêm vào giỏ hàng thành công!";
+        
+        // Redirect lại chính trang chi tiết sản phẩm
+        $url = "index.php?mod=detail&type=$type&id=$p_id";
+        header("Location: $url");
+        exit;
+    }
+}
+// --- KẾT THÚC PHẦN XỬ LÝ CART ---
+
+
+// 2) USER SESSION
 $fullName = $_SESSION['user']['full_name'] ?? '';
 $userId   = (int)($_SESSION['user']['id'] ?? 0);
 
-// Nếu bạn muốn demo user_id = 2 khi chưa login thì bật dòng dưới:
-// if ($userId <= 0) $userId = 2;
+// =========================================================================
+// 3) CONTROLLER: XỬ LÝ THÊM VÀO GIỎ HÀNG (Logic Cart Add)
+// =========================================================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mod']) && $_POST['mod'] === 'cart_add') {
+    
+    $p_id      = (int)($_POST['id'] ?? 0);
+    $v_id      = (int)($_POST['variant'] ?? 0);
+    $p_type    = $_POST['type'] ?? 'iphone';
+    $quantity  = 1; // Mặc định thêm 1
 
-// 4) MINI CART DATA
+    if ($p_id > 0 && $v_id > 0) {
+        
+        // --- TRƯỜNG HỢP A: ĐÃ ĐĂNG NHẬP (Lưu vào Database) ---
+        if ($userId > 0) {
+            // 1. Kiểm tra/Tạo giỏ hàng active
+            $stmt = $conn->prepare("SELECT id FROM carts WHERE user_id = ? AND status = 'active' LIMIT 1");
+            $stmt->execute([$userId]);
+            $cart = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$cart) {
+                // Tạo giỏ mới
+                $stmtNew = $conn->prepare("INSERT INTO carts (user_id, status, created_at) VALUES (?, 'active', NOW())");
+                $stmtNew->execute([$userId]);
+                $cartId = $conn->lastInsertId();
+            } else {
+                $cartId = $cart['id'];
+            }
+
+            // 2. Lấy giá sản phẩm hiện tại để lưu vào cart_items
+            $stmtPrice = $conn->prepare("SELECT price FROM product_variants WHERE id = ?");
+            $stmtPrice->execute([$v_id]);
+            $vRow = $stmtPrice->fetch(PDO::FETCH_ASSOC);
+            $price = $vRow['price'] ?? 0;
+
+            // 3. Thêm vào cart_items (Nếu trùng variant thì tăng số lượng - dùng ON DUPLICATE KEY UPDATE)
+            // Lưu ý: Table cart_items của bạn cần có UNIQUE KEY(cart_id, product_variant_id) như trong schema đã gửi
+            $sqlInsert = "INSERT INTO cart_items (cart_id, product_id, product_variant_id, quality, unit_price, created_at)
+                          VALUES (:cid, :pid, :vid, :qty, :price, NOW())
+                          ON DUPLICATE KEY UPDATE quality = quality + :qty";
+            
+            $stmtIns = $conn->prepare($sqlInsert);
+            $stmtIns->execute([
+                ':cid' => $cartId,
+                ':pid' => $p_id,
+                ':vid' => $v_id,
+                ':qty' => $quantity,
+                ':price' => $price
+            ]);
+        } 
+        
+        // --- TRƯỜNG HỢP B: KHÁCH VÃNG LAI (Lưu vào Session) ---
+        // (Chúng ta vẫn lưu Session kể cả khi đã login để đồng bộ trải nghiệm nếu cần, 
+        // nhưng ở đây tôi tách ra else để tránh dư thừa, hoặc bạn có thể lưu cả 2)
+        else {
+            if (!isset($_SESSION['cart'])) {
+                $_SESSION['cart'] = [];
+            }
+
+            // Kiểm tra xem variant này đã có trong session chưa
+            $found = false;
+            foreach ($_SESSION['cart'] as &$item) {
+                if ((int)$item['variant_id'] === $v_id) {
+                    $item['quantity'] += $quantity;
+                    $found = true;
+                    break;
+                }
+            }
+            unset($item); // Phá tham chiếu
+
+            if (!$found) {
+                $_SESSION['cart'][] = [
+                    'id'         => $p_id,
+                    'variant_id' => $v_id,
+                    'type'       => $p_type,
+                    'quantity'   => $quantity
+                ];
+            }
+        }
+
+        // --- Redirect lại trang chi tiết ---
+        $url = "index.php?mod=detail&type=$p_type&id=$p_id";
+        header("Location: $url");
+        exit;
+    }
+}
+
+// =========================================================================
+// 4) LOAD MINI CART DATA (Hiển thị)
+// =========================================================================
 $mini_cart_items = [];
 $mini_cart_total = 0;
 
-// Hàm hỗ trợ tạo slug (dùng khi DB không có image_url)
+// Hàm tạo slug hỗ trợ ảnh
 if (!function_exists('createSlug')) {
     function createSlug($str) {
         $str = trim(mb_strtolower($str));
@@ -34,31 +210,65 @@ if (!function_exists('createSlug')) {
     }
 }
 
-// Load mini cart nếu có userId và có $conn
-if (isset($conn) && $userId > 0) {
-    try {
-        // Lấy cart active
-        $stmtC = $conn->prepare("SELECT id FROM carts WHERE user_id = ? AND status = 'active' LIMIT 1");
-        $stmtC->execute([$userId]);
-        $cartRow = $stmtC->fetch(PDO::FETCH_ASSOC);
+// -- LOGIC LOAD MINI CART --
+if (isset($conn)) {
+    // A. Nếu đã login -> Lấy từ DB
+    if ($userId > 0) {
+        try {
+            $stmtC = $conn->prepare("SELECT id FROM carts WHERE user_id = ? AND status = 'active' LIMIT 1");
+            $stmtC->execute([$userId]);
+            $cartRow = $stmtC->fetch(PDO::FETCH_ASSOC);
 
-        if ($cartRow) {
-            // Lấy items
-            $sqlMini = "SELECT ci.quantity, p.name, p.slug, pv.color, pv.price, pv.image_url
-                        FROM cart_items ci
-                        JOIN product_variants pv ON ci.variant_id = pv.id
-                        JOIN products p ON pv.product_id = p.id
-                        WHERE ci.cart_id = ?";
-            $stmtMini = $conn->prepare($sqlMini);
-            $stmtMini->execute([$cartRow['id']]);
-            $mini_cart_items = $stmtMini->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            if ($cartRow) {
+                // Lấy chi tiết items
+                $sqlMini = "SELECT ci.quality as quantity, p.name, p.slug, pv.color, pv.price, pv.image_url
+                            FROM cart_items ci
+                            JOIN product_variants pv ON ci.product_variant_id = pv.id
+                            JOIN products p ON pv.product_id = p.id
+                            WHERE ci.cart_id = ?";
+                $stmtMini = $conn->prepare($sqlMini);
+                $stmtMini->execute([$cartRow['id']]);
+                $mini_cart_items = $stmtMini->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            }
+        } catch (Exception $e) { /* Ignore */ }
+    } 
+    // B. Nếu chưa login -> Lấy từ SESSION
+    else {
+        if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
+            // Lấy danh sách ID variant từ session để query DB lấy thông tin (tên, giá, ảnh)
+            $ids = array_column($_SESSION['cart'], 'variant_id');
+            if (!empty($ids)) {
+                // Query DB lấy thông tin sản phẩm
+                $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                $sqlSess = "SELECT pv.id as variant_id, p.name, p.slug, pv.color, pv.price, pv.image_url
+                            FROM product_variants pv
+                            JOIN products p ON pv.product_id = p.id
+                            WHERE pv.id IN ($placeholders)";
+                
+                try {
+                    $stmtSess = $conn->prepare($sqlSess);
+                    $stmtSess->execute($ids);
+                    $productsInfo = $stmtSess->fetchAll(PDO::FETCH_ASSOC);
+
+                    // Map lại quantity từ Session vào data vừa lấy từ DB
+                    // Vì DB chỉ trả về thông tin sp, còn số lượng nằm trong Session
+                    foreach ($productsInfo as $prod) {
+                        $qty = 0;
+                        foreach ($_SESSION['cart'] as $sessItem) {
+                            if ((int)$sessItem['variant_id'] === (int)$prod['variant_id']) {
+                                $qty = $sessItem['quantity'];
+                                break;
+                            }
+                        }
+                        $prod['quantity'] = $qty;
+                        $mini_cart_items[] = $prod;
+                    }
+
+                } catch (Exception $e) { /* Ignore */ }
+            }
         }
-    } catch (Exception $e) {
-        // bỏ qua lỗi DB
-        $mini_cart_items = [];
     }
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -147,13 +357,19 @@ if (isset($conn) && $userId > 0) {
 
         <div class="header-actions">
 
-            <!-- MINI CART -->
             <div class="header-cart-wrapper">
                 <div class="cart-btn" id="cartBtn">
                     <i class="fa-solid fa-cart-shopping"></i>
                     <span>Giỏ hàng</span>
-                    <?php if (count($mini_cart_items) > 0): ?>
-                        <span class="cart-badge"><?php echo count($mini_cart_items); ?></span>
+                    <?php 
+                        // Đếm tổng số lượng item
+                        $totalCount = 0;
+                        foreach($mini_cart_items as $itm) {
+                            $totalCount += $itm['quantity'];
+                        }
+                    ?>
+                    <?php if ($totalCount > 0): ?>
+                        <span class="cart-badge"><?php echo $totalCount; ?></span>
                     <?php endif; ?>
                 </div>
 
@@ -200,7 +416,6 @@ if (isset($conn) && $userId > 0) {
                 </div>
             </div>
 
-            <!-- ACCOUNT -->
             <div class="account-wrap">
                 <?php if ($fullName !== ''): ?>
                     <button type="button" class="account-btn" id="accountBtn">
@@ -213,7 +428,7 @@ if (isset($conn) && $userId > 0) {
                 <?php else: ?>
                     <a href="/DA-cuoiky/index.php?mod=login" class="account-btn" style="text-decoration:none;">
                         <i class="fa-regular fa-user"></i>
-                       <span>Đăng nhập</span>
+                        <span>Đăng nhập</span>
                     </a>
                 <?php endif; ?>
             </div>
@@ -341,4 +556,3 @@ if (isset($conn) && $userId > 0) {
 </body>
 </html>
 <?php ob_end_flush(); ?>
-
