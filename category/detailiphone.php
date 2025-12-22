@@ -206,7 +206,6 @@ const mainImg       = document.getElementById('mainImg');
 
 // Form Mua Ngay
 const variantIdForm = document.getElementById('variantIdForm'); 
-const variantIdCart = document.getElementById('variantIdCart');
 
 // --- BỔ SUNG: Form Thêm Vào Giỏ ---
 const variantIdCart = document.getElementById('variantIdCart'); 
